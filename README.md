@@ -19,11 +19,14 @@ A full-stack ticket management system built with Express, React, TypeScript, and
 helpdesk/
 ├── backend/              # Express API server
 │   ├── src/
+│   │   ├── lib/          # Library modules (prisma client)
 │   │   ├── config/       # Configuration files
 │   │   ├── middleware/   # Express middleware
 │   │   ├── routes/       # API routes
 │   │   └── index.ts      # Entry point
 │   ├── prisma/           # Prisma schema & migrations
+│   ├── prisma.config.ts  # Prisma CLI configuration
+│   ├── .env              # Environment variables (DATABASE_URL)
 │   ├── package.json
 │   └── tsconfig.json
 ├── frontend/             # React application
@@ -64,6 +67,12 @@ bun run dev
 # Or run separately
 bun run dev:backend    # Backend on http://localhost:3001
 bun run dev:frontend   # Frontend on http://localhost:5173
+
+# Database commands (from backend/)
+bun run db:generate    # Generate Prisma client
+bun run db:migrate     # Run database migrations
+bun run db:push        # Push schema to database
+bun run db:studio      # Open Prisma Studio
 ```
 
 ## API Endpoints

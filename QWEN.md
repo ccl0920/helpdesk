@@ -63,10 +63,13 @@ bun run dev:frontend   # Frontend on http://localhost:5173
 - [x] Set up backend: Node.js + Express + TypeScript
 - [x] Set up frontend: React + TypeScript
 - [x] Frontend health check API call
+- [x] Set up Prisma ORM with PostgreSQL
+- [x] Configure DATABASE_URL for helpdesk database
+- [x] Generate Prisma client
+- [x] Verify full stack runs locally
 
 ### Pending
-- [ ] Set up Prisma ORM with PostgreSQL
-- [ ] Verify full stack runs locally
+- [ ] Create initial Prisma migration (Phase 2)
 
 ## Next Phase: Phase 2 (Database Schema & Authentication)
 
