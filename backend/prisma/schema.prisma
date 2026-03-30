@@ -9,12 +9,20 @@ datasource db {
   provider = "postgresql"
 }
 
+// Enums
+
+enum Role {
+  AGENT
+  ADMIN
+}
+
 // Better Auth models
 
 model User {
   id            String    @id @default(cuid())
   email         String    @unique
   name          String?
+  role          Role      @default(AGENT)
   emailVerified Boolean?
   image         String?
   createdAt     DateTime  @default(now())
