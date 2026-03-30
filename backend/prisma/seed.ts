@@ -15,8 +15,8 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting seed...');
 
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'password';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@helpdesk.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
 
   // Check if admin already exists
   const existingAdmin = await prisma.user.findUnique({
@@ -28,7 +28,7 @@ async function main() {
     return;
   }
 
-  // Hash password using bcrypt (Better Auth default: 10 rounds)
+  // Hash password using bcrypt (10 rounds)
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
   // Create admin user with associated account (for email/password auth)

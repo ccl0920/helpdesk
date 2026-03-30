@@ -7,9 +7,14 @@ import authRoutes from './routes/auth.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Parse trusted origins from environment variable
+const trustedOrigins = (process.env.TRUSTED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim());
+
 // CORS middleware (must be first)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: trustedOrigins,
   credentials: true
 }));
 
