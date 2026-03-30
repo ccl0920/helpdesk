@@ -2,15 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import prisma from './lib/prisma.js';
+import authRoutes from './routes/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// CORS middleware (must be first)
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
+
+// Auth routes (Better Auth) - must be before express.json()
+app.use('/api/auth', authRoutes);
+
+// Other middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -25,7 +31,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Routes placeholder
+// API base
 app.get('/api', (req, res) => {
   res.json({ message: 'Helpdesk API v1' });
 });
@@ -33,7 +39,8 @@ app.get('/api', (req, res) => {
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('Error:', err.message);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error('Stack:', err.stack);
+  res.status(500).json({ error: 'Internal server error', details: err.message });
 });
 
 // Graceful shutdown

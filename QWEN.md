@@ -136,3 +136,4 @@ See `implementation-plan.md` for detailed phase breakdown.
 - Always use Context7 to fetch up-to-date documentation before implementing new features
 - Keep code TypeScript strict mode compliant
 - Follow existing project conventions for imports, naming, and structure
+- Always use `prisma migrate dev` for development, never `prisma db push`
