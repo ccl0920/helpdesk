@@ -1,8 +1,13 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { loginSchema, type LoginFormData } from '../lib/validation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -38,114 +43,97 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-center text-3xl font-bold tracking-tight text-foreground">
           Helpdesk
         </h1>
-        <h2 className="mt-2 text-center text-xl font-semibold text-gray-700">
+        <h2 className="mt-2 text-center text-xl font-semibold text-muted-foreground">
           Sign in to your account
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {errors.root && (
-              <div role="alert" className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-800">{errors.root.message}</p>
-              </div>
-            )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sign In</CardTitle>
+            <CardDescription>Enter your credentials to access your account</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+              {errors.root && (
+                <Alert variant="destructive">
+                  <AlertDescription>{errors.root.message}</AlertDescription>
+                </Alert>
+              )}
 
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="email">Email address</Label>
+                <Input
                   id="email"
                   type="email"
                   autoComplete="email"
                   disabled={isSubmitting}
                   {...register('email')}
-                  className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-1 sm:text-sm ${
-                    errors.email
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                  } disabled:bg-gray-100 disabled:cursor-not-allowed`}
                   placeholder="you@example.com"
+                  className={errors.email ? 'border-destructive' : ''}
                 />
+                {errors.email && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.email.message}
+                  </p>
+                )}
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600" role="alert">
-                  {errors.email.message}
-                </p>
-              )}
-            </div>
 
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="mt-1">
-                <input
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
                   id="password"
                   type="password"
                   autoComplete="current-password"
                   disabled={isSubmitting}
                   {...register('password')}
-                  className={`block w-full rounded-md border px-3 py-2 shadow-sm focus:outline-none focus:ring-1 sm:text-sm ${
-                    errors.password
-                      ? 'border-red-300 focus:border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-                  } disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                  className={errors.password ? 'border-destructive' : ''}
                 />
+                {errors.password && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.password.message}
+                  </p>
+                )}
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600" role="alert">
-                  {errors.password.message}
+
+              <div>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  {isSubmitting ? 'Signing in...' : 'Sign in'}
+                </Button>
+              </div>
+            </form>
+
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-card px-2 text-muted-foreground">
+                    Demo credentials
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-muted-foreground">
+                <p>Use the seeded admin account:</p>
+                <p className="mt-1 font-mono text-xs bg-muted p-2 rounded">
+                  Email: admin@example.com<br />
+                  Password: password
                 </p>
-              )}
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                aria-busy={isSubmitting}
-                className="flex w-full justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
-          </form>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="bg-white px-2 text-gray-500">
-                  Demo credentials
-                </span>
               </div>
             </div>
-            <div className="mt-4 text-sm text-gray-600">
-              <p>Use the seeded admin account:</p>
-              <p className="mt-1 font-mono text-xs bg-gray-100 p-2 rounded">
-                Email: admin@example.com<br />
-                Password: password
-              </p>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

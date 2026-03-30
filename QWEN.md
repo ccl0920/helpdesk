@@ -8,7 +8,7 @@ A full-stack ticket management system that uses AI to automatically classify, re
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS + React Router |
+| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS + React Router + shadcn/ui |
 | **Backend** | Express 5 + TypeScript |
 | **Runtime** | Bun |
 | **Database** | PostgreSQL (with Prisma ORM) - Phase 2 |
@@ -137,3 +137,104 @@ See `implementation-plan.md` for detailed phase breakdown.
 - Keep code TypeScript strict mode compliant
 - Follow existing project conventions for imports, naming, and structure
 - Always use `prisma migrate dev` for development, never `prisma db push`
+
+## shadcn/ui Configuration
+
+### Installed Components
+- `button` - Button component with variants (default, secondary, outline, destructive, ghost, link)
+- `input` - Form input field with proper styling
+- `label` - Form label with proper styling
+- `alert` - Alert messages with variants (default, destructive)
+- `card` - Card container with Header, Title, Description, Content
+
+### Import Alias
+- Use `@/` alias for `src/` directory (configured in `tsconfig.json` and `vite.config.ts`)
+- Example: `import { Button } from '@/components/ui/button'`
+
+### Adding New Components
+```bash
+cd frontend
+bunx shadcn@latest add <component-name>
+```
+
+### Theme Colors
+Use CSS variables for theming (supports light/dark mode):
+- `bg-background`, `text-foreground` - Base colors
+- `bg-card`, `text-card-foreground` - Card surfaces
+- `text-muted-foreground` - Secondary text
+- `border-border` - Borders and dividers
+- `bg-primary`, `text-primary-foreground` - Primary actions
+- `bg-destructive`, `text-destructive-foreground` - Destructive actions
+
+## Authentication
+
+### Overview
+Authentication is implemented using **Better Auth** library with email/password credentials and session-based authentication.
+
+### Backend API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/sign-in/email` | Sign in with email and password |
+| `POST` | `/api/auth/sign-out` | Sign out and clear session |
+| `GET` | `/api/auth/get-session` | Get current session and user |
+
+### Frontend Implementation
+
+#### Auth Context (`src/context/AuthContext.tsx`)
+Provides authentication state and methods throughout the app:
+
+```typescript
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+}
+```
+
+#### useAuth Hook (`src/hooks/useAuth.ts`)
+Custom hook to access auth context:
+```typescript
+const { user, isAuthenticated, login, logout } = useAuth();
+```
+
+#### Protected Routes
+Use `ProtectedRoute` component to guard authenticated pages:
+```typescript
+<ProtectedRoute>
+  <YourComponent />
+</ProtectedRoute>
+```
+
+### User Interface
+
+#### Login Page (`src/pages/LoginPage.tsx`)
+- Email and password form with validation (Zod schema)
+- Error handling with shadcn Alert component
+- Demo credentials display for testing
+
+#### Demo Credentials
+```
+Email: admin@example.com
+Password: password
+```
+
+### Session Management
+- Sessions are stored via HTTP-only cookies
+- Session is refreshed on app load and after login
+- Automatic redirect to `/login` if unauthenticated
+
+### Files Reference
+
+| File | Purpose |
+|------|---------|
+| `backend/src/index.ts` | Better Auth server setup |
+| `backend/src/routes/auth.ts` | Auth route handlers |
+| `frontend/src/context/AuthContext.tsx` | Auth context provider |
+| `frontend/src/hooks/useAuth.ts` | Auth hook |
+| `frontend/src/pages/LoginPage.tsx` | Login form |
+| `frontend/src/components/ProtectedRoute.tsx` | Route guard |

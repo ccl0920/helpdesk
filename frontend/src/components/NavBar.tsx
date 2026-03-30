@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 interface NavBarProps {
   showAuth?: boolean;
@@ -15,10 +16,10 @@ export function NavBar({ showAuth = true }: NavBarProps) {
   };
 
   return (
-    <header className="bg-white shadow">
+    <header className="bg-card border-b">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-3xl font-bold tracking-tight text-gray-900">
+          <Link to="/" className="text-3xl font-bold tracking-tight text-foreground">
             Helpdesk
           </Link>
           {showAuth && (
@@ -26,21 +27,18 @@ export function NavBar({ showAuth = true }: NavBarProps) {
               {isAuthenticated ? (
                 <>
                   {user?.name && (
-                    <span className="text-gray-700">Hello, {user.name}</span>
+                    <span className="text-muted-foreground">Hello, {user.name}</span>
                   )}
-                  <button
+                  <Button
                     onClick={handleSignOut}
-                    className="rounded-md bg-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                    variant="outline"
                   >
                     Sign Out
-                  </button>
+                  </Button>
                 </>
               ) : (
-                <Link
-                  to="/login"
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                >
-                  Sign In
+                <Link to="/login">
+                  <Button>Sign In</Button>
                 </Link>
               )}
             </div>

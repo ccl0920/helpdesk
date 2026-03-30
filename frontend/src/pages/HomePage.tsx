@@ -1,28 +1,29 @@
 import { useAuth } from '../hooks/useAuth';
 import { NavBar } from '../components/NavBar';
 import { ProtectedRoute } from '../components/ProtectedRoute';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function HomePage() {
   const { user } = useAuth();
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <NavBar />
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="text-xl font-semibold text-gray-900">
-              Welcome to Helpdesk
-            </h2>
-            <p className="mt-2 text-gray-600">
-              You are signed in as <span className="font-medium text-gray-900">{user?.email}</span>
-            </p>
-            <div className="mt-6">
-              <p className="text-gray-600">
+          <Card>
+            <CardHeader>
+              <CardTitle>Welcome to Helpdesk</CardTitle>
+              <CardDescription>
+                You are signed in as <span className="font-medium text-foreground">{user?.email}</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
                 This is your dashboard. Ticket management features coming soon.
               </p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </main>
       </div>
     </ProtectedRoute>
