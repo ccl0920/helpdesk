@@ -25,7 +25,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
   }
 
   if (user?.role !== 'ADMIN') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/access-denied" replace />;
   }
 
   return <>{children}</>;

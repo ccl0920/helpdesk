@@ -12,11 +12,32 @@ if (!connectionString) {
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+/**
+ * Validate password strength
+ * Requirements: 12+ chars, uppercase, lowercase, number, special character
+ */
+function validatePassword(password: string): void {
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
+  if (!passwordRegex.test(password)) {
+    throw new Error(
+      'ADMIN_PASSWORD must be at least 12 characters and contain uppercase, lowercase, number, and special character'
+    );
+  }
+}
+
 async function main() {
   console.log('🌱 Starting seed...');
 
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'password';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  // Require environment variables
+  if (!adminEmail || !adminPassword) {
+    throw new Error('ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required');
+  }
+
+  // Validate password strength
+  validatePassword(adminPassword);
 
   // Check if admin already exists
   const existingAdmin = await prisma.user.findUnique({
@@ -24,8 +45,8 @@ async function main() {
   });
 
   if (!existingAdmin) {
-    // Hash password using bcrypt (10 rounds)
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    // Hash password using bcrypt (12 rounds)
+    const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
     // Create admin user with associated account (for email/password auth)
     const admin = await prisma.user.create({

@@ -10,11 +10,12 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: process.env.NODE_ENV === 'production',
     disableSignUp: true,
     password: {
+      minLength: 12,
       hash: async (password) => {
-        return await bcrypt.hash(password, 10);
+        return await bcrypt.hash(password, 12);
       },
       verify: async ({ hash, password }) => {
         return await bcrypt.compare(password, hash);
@@ -34,6 +35,16 @@ export const auth = betterAuth({
         defaultValue: 'AGENT',
         returned: true,
       },
+    },
+  },
+  cookies: {
+    session: {
+      name: 'better-auth.session-token',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
     },
   },
   trustedOrigins: (process.env.TRUSTED_ORIGINS || '')

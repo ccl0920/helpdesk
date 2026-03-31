@@ -113,25 +113,27 @@ export function LoginPage() {
               </div>
             </form>
 
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-border" />
+            {import.meta.env.DEV && (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      Demo credentials
+                    </span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Demo credentials
-                  </span>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p>Use the seeded admin account:</p>
+                  <p className="mt-1 font-mono text-xs bg-muted p-2 rounded">
+                    Email: admin@example.com<br />
+                    Password: password
+                  </p>
                 </div>
               </div>
-              <div className="mt-4 text-sm text-muted-foreground">
-                <p>Use the seeded admin account:</p>
-                <p className="mt-1 font-mono text-xs bg-muted p-2 rounded">
-                  Email: admin@example.com<br />
-                  Password: password
-                </p>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

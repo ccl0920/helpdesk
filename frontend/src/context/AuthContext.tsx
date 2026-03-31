@@ -1,4 +1,5 @@
 import { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/lib/config';
 
 interface User {
   id: string;
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshSession = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/auth/get-session', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/get-session`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -71,7 +72,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [refreshSession]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch('http://localhost:3001/api/auth/sign-in/email', {
+    const res = await fetch(`${API_BASE_URL}/api/auth/sign-in/email`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -96,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [refreshSession]);
 
   const logout = useCallback(async () => {
-    await fetch('http://localhost:3001/api/auth/sign-out', {
+    await fetch(`${API_BASE_URL}/api/auth/sign-out`, {
       method: 'POST',
       credentials: 'include',
     });
