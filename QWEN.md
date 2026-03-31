@@ -56,7 +56,7 @@ bun run dev:backend    # Backend on http://localhost:3001
 bun run dev:frontend   # Frontend on http://localhost:5173
 ```
 
-## Current Phase: Phase 1 (Setup & Infrastructure)
+## Current Phase: Phase 2 (Database Schema & Authentication)
 
 ### Completed
 - [x] Initialize monorepo structure (frontend/, backend/)
@@ -67,6 +67,9 @@ bun run dev:frontend   # Frontend on http://localhost:5173
 - [x] Configure DATABASE_URL for helpdesk database
 - [x] Generate Prisma client
 - [x] Verify full stack runs locally
+- [x] Implement Better Auth with email/password
+- [x] Implement role-based access control (Admin/Agent roles)
+- [x] Create admin-only /users page
 
 ### Pending
 - [ ] Create initial Prisma migration (Phase 2)
@@ -128,8 +131,14 @@ See `implementation-plan.md` for detailed phase breakdown.
 ### User Roles
 | Role | Permissions |
 |------|-------------|
-| **Admin** | Create/manage agents, view all tickets, full system access |
+| **Admin** | Create/manage agents, view all tickets, full system access, access admin-only routes |
 | **Agent** | View and respond to tickets, update ticket status/category |
+
+Access admin status in components:
+```typescript
+const { user, isAdmin } = useAuth();
+// isAdmin returns true if user.role === 'ADMIN'
+```
 
 ## Notes
 
@@ -190,11 +199,14 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
 }
 ```
+
+The `User` interface includes a `role` field: `'AGENT' | 'ADMIN'`.
 
 #### useAuth Hook (`src/hooks/useAuth.ts`)
 Custom hook to access auth context:
@@ -209,6 +221,16 @@ Use `ProtectedRoute` component to guard authenticated pages:
   <YourComponent />
 </ProtectedRoute>
 ```
+
+Use `AdminRoute` component to guard admin-only pages:
+```typescript
+<AdminRoute>
+  <YourComponent />
+</AdminRoute>
+```
+
+#### User Roles
+The `User` interface includes a `role` field (`'AGENT' | 'ADMIN'`). The auth context provides an `isAdmin` boolean helper.
 
 ### User Interface
 
@@ -234,7 +256,10 @@ Password: password
 |------|---------|
 | `backend/src/index.ts` | Better Auth server setup |
 | `backend/src/routes/auth.ts` | Auth route handlers |
+| `backend/src/auth.ts` | Better Auth configuration with user roles |
 | `frontend/src/context/AuthContext.tsx` | Auth context provider |
 | `frontend/src/hooks/useAuth.ts` | Auth hook |
 | `frontend/src/pages/LoginPage.tsx` | Login form |
-| `frontend/src/components/ProtectedRoute.tsx` | Route guard |
+| `frontend/src/components/ProtectedRoute.tsx` | Route guard for authenticated pages |
+| `frontend/src/components/AdminRoute.tsx` | Route guard for admin-only pages |
+| `frontend/src/pages/UsersPage.tsx` | Admin-only users management page |

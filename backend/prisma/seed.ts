@@ -15,43 +15,42 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   console.log('🌱 Starting seed...');
 
-  const adminEmail = process.env.ADMIN_EMAIL || 'admin@helpdesk.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+  const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'password';
 
   // Check if admin already exists
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
   });
 
-  if (existingAdmin) {
-    console.log(`ℹ️  Admin user already exists: ${adminEmail}`);
-    return;
-  }
+  if (!existingAdmin) {
+    // Hash password using bcrypt (10 rounds)
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  // Hash password using bcrypt (10 rounds)
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
-  // Create admin user with associated account (for email/password auth)
-  const admin = await prisma.user.create({
-    data: {
-      email: adminEmail,
-      name: 'Admin',
-      role: Role.ADMIN,
-      accounts: {
-        create: {
-          accountId: adminEmail,
-          providerId: 'credential',
-          accountType: 'email-password',
-          password: hashedPassword,
+    // Create admin user with associated account (for email/password auth)
+    const admin = await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: 'Admin',
+        role: Role.ADMIN,
+        accounts: {
+          create: {
+            accountId: adminEmail,
+            providerId: 'credential',
+            accountType: 'email-password',
+            password: hashedPassword,
+          },
         },
       },
-    },
-    include: {
-      accounts: true,
-    },
-  });
+      include: {
+        accounts: true,
+      },
+    });
 
-  console.log(`✅ Admin user created: ${admin.email} (role: ${admin.role})`);
+    console.log(`✅ Admin user created: ${admin.email} (role: ${admin.role})`);
+  } else {
+    console.log(`ℹ️  Admin user already exists: ${adminEmail}`);
+  }
 }
 
 main()

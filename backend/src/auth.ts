@@ -25,6 +25,17 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day (session refresh interval)
   },
+  user: {
+    modelName: 'user',
+    additionalFields: {
+      role: {
+        type: 'string',
+        required: true,
+        defaultValue: 'AGENT',
+        returned: true,
+      },
+    },
+  },
   trustedOrigins: (process.env.TRUSTED_ORIGINS || '')
     .split(',')
     .filter(Boolean)

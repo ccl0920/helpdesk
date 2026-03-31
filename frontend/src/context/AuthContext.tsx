@@ -5,6 +5,7 @@ interface User {
   email: string;
   name: string | null;
   image: string | null;
+  role: 'AGENT' | 'ADMIN';
 }
 
 interface Session {
@@ -17,6 +18,7 @@ interface AuthContextType {
   session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -105,6 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user: session?.user ?? null,
     session,
     isAuthenticated: !!session,
+    isAdmin: session?.user?.role === 'ADMIN',
     isLoading,
     login,
     logout,
