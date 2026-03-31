@@ -1,7 +1,10 @@
 import rateLimit from 'express-rate-limit';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 /**
  * Rate limiter for authentication endpoints
+ * Only applies in production
  * Only applies to POST requests (sign-in, sign-up, password reset)
  * Allows 5 attempts per 15 minutes per IP
  */
@@ -13,11 +16,12 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   // Only rate limit POST requests (sign-in, sign-up, password reset)
   // GET requests (get-session) should not count against the limit
-  skip: (req) => req.method !== 'POST',
+  skip: (req) => !isProduction || req.method !== 'POST',
 });
 
 /**
  * Rate limiter for general API endpoints
+ * Only applies in production
  * Allows 100 requests per 15 minutes per IP
  */
 export const generalLimiter = rateLimit({
@@ -26,4 +30,5 @@ export const generalLimiter = rateLimit({
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: () => !isProduction,
 });

@@ -7,9 +7,17 @@
     "dev": "concurrently \"bun run --cwd backend dev\" \"bun run --cwd frontend dev\"",
     "dev:backend": "bun run --cwd backend dev",
     "dev:frontend": "bun run --cwd frontend dev",
-    "install:all": "bun install && bun install --cwd backend && bun install --cwd frontend"
+    "install:all": "bun install && bun install --cwd backend && bun install --cwd frontend",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report"
   },
   "devDependencies": {
-    "concurrently": "^9.1.2"
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.5.0",
+    "concurrently": "^9.1.2",
+    "dotenv": "^17.3.1"
   }
 }
