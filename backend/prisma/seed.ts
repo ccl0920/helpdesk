@@ -20,7 +20,7 @@ function validatePassword(password: string): void {
   const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
   if (!passwordRegex.test(password)) {
     throw new Error(
-      'ADMIN_PASSWORD must be at least 12 characters and contain uppercase, lowercase, number, and special character'
+      'Password must be at least 12 characters and contain uppercase, lowercase, number, and special character'
     );
   }
 }
@@ -30,6 +30,8 @@ async function main() {
 
   const adminEmail = process.env.ADMIN_EMAIL;
   const adminPassword = process.env.ADMIN_PASSWORD;
+  const agentEmail = process.env.AGENT_EMAIL;
+  const agentPassword = process.env.AGENT_PASSWORD;
 
   // Require environment variables
   if (!adminEmail || !adminPassword) {
@@ -49,16 +51,17 @@ async function main() {
     const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
     // Create admin user with associated account (for email/password auth)
+    // Better Auth expects: accountId = email, accountType = "email", providerId = "credential"
     const admin = await prisma.user.create({
       data: {
         email: adminEmail,
-        name: 'Admin',
+        name: 'Admin User',
         role: Role.ADMIN,
         accounts: {
           create: {
-            accountId: adminEmail,
+            accountId: adminEmail.toLowerCase(),
             providerId: 'credential',
-            accountType: 'email-password',
+            accountType: 'email',
             password: hashedPassword,
           },
         },
@@ -71,6 +74,42 @@ async function main() {
     console.log(`✅ Admin user created: ${admin.email} (role: ${admin.role})`);
   } else {
     console.log(`ℹ️  Admin user already exists: ${adminEmail}`);
+  }
+
+  // Create agent user if AGENT_EMAIL and AGENT_PASSWORD are provided
+  if (agentEmail && agentPassword) {
+    const existingAgent = await prisma.user.findUnique({
+      where: { email: agentEmail },
+    });
+
+    if (!existingAgent) {
+      // Validate agent password
+      validatePassword(agentPassword);
+      const hashedAgentPassword = await bcrypt.hash(agentPassword, 12);
+
+      const agent = await prisma.user.create({
+        data: {
+          email: agentEmail,
+          name: 'Agent User',
+          role: Role.AGENT,
+          accounts: {
+            create: {
+              accountId: agentEmail.toLowerCase(),
+              providerId: 'credential',
+              accountType: 'email',
+              password: hashedAgentPassword,
+            },
+          },
+        },
+        include: {
+          accounts: true,
+        },
+      });
+
+      console.log(`✅ Agent user created: ${agent.email} (role: ${agent.role})`);
+    } else {
+      console.log(`ℹ️  Agent user already exists: ${agentEmail}`);
+    }
   }
 }
 

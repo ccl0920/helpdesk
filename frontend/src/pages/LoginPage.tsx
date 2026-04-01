@@ -60,7 +60,7 @@ export function LoginPage() {
             <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
               {errors.root && (
                 <Alert variant="destructive">
                   <AlertDescription>{errors.root.message}</AlertDescription>
@@ -76,12 +76,14 @@ export function LoginPage() {
                   disabled={isSubmitting}
                   {...register('email')}
                   placeholder="you@example.com"
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
                   className={errors.email ? 'border-destructive' : ''}
                 />
                 {errors.email && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {errors.email.message}
-                  </p>
+                  <Alert variant="destructive">
+                    <AlertDescription id="email-error">{errors.email.message}</AlertDescription>
+                  </Alert>
                 )}
               </div>
 
@@ -94,11 +96,13 @@ export function LoginPage() {
                   disabled={isSubmitting}
                   {...register('password')}
                   className={errors.password ? 'border-destructive' : ''}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
                 />
                 {errors.password && (
-                  <p className="text-sm text-destructive" role="alert">
-                    {errors.password.message}
-                  </p>
+                  <Alert variant="destructive">
+                    <AlertDescription id="password-error">{errors.password.message}</AlertDescription>
+                  </Alert>
                 )}
               </div>
 
@@ -107,8 +111,9 @@ export function LoginPage() {
                   type="submit"
                   disabled={isSubmitting}
                   className="w-full"
+                  aria-label="Sign in"
                 >
-                  {isSubmitting ? 'Signing in...' : 'Sign in'}
+                  {isSubmitting ? 'Signing in...' : 'Sign In'}
                 </Button>
               </div>
             </form>
