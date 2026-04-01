@@ -310,3 +310,27 @@ Rate limiting is **disabled** in development and test environments. It only appl
 | File | Purpose |
 |------|---------|
 | `backend/src/middleware/rateLimiter.ts` | Rate limiting middleware (production only) |
+
+### Using the playwright-e2e-tester Agent
+
+When implementing new features, user flows, or pages that require automated testing, use the **playwright-e2e-tester** agent to write E2E tests.
+
+**When to trigger the agent:**
+- After implementing new features or user flows
+- When adding test coverage for critical user journeys
+- When existing tests need updating due to UI changes
+- When implementing authentication/authorization flows
+- When adding form validations or error handling tests
+
+**How to use:**
+```
+Use the agent tool with subagent_type: "playwright-e2e-tester"
+Provide a clear description of what needs to be tested
+Include any specific scenarios or edge cases to cover
+```
+
+The agent will:
+- Write production-ready Playwright tests following best practices
+- Use resilient selectors (getByRole, getByLabel, getByTestId)
+- Cover happy paths and edge cases
+- Provide instructions for running the tests
