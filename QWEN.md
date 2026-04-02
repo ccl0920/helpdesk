@@ -8,7 +8,7 @@ A full-stack ticket management system that uses AI to automatically classify, re
 
 | Layer | Technology |
 |-------|------------|
-| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS + React Router + shadcn/ui |
+| **Frontend** | React 19 + TypeScript + Vite + Tailwind CSS + React Router + shadcn/ui + **TanStack Query** + **Axios** |
 | **Backend** | Express 5 + TypeScript |
 | **Runtime** | Bun |
 | **Database** | PostgreSQL (with Prisma ORM) - Phase 2 |
@@ -334,3 +334,67 @@ The agent will:
 - Use resilient selectors (getByRole, getByLabel, getByTestId)
 - Cover happy paths and edge cases
 - Provide instructions for running the tests
+
+## API & Data Fetching
+
+### Axios Configuration
+
+API calls use **Axios** with a pre-configured instance for consistent settings:
+
+```typescript
+// src/lib/api.ts
+import axios from 'axios';
+import { API_BASE_URL } from './config';
+
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true, // Include cookies for auth
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+```
+
+**Guidelines:**
+- Use the `api` instance for all backend requests
+- `withCredentials: true` ensures session cookies are included
+- Handle errors at the query/mutation level (TanStack Query)
+
+### TanStack Query (React Query)
+
+Data fetching uses **TanStack Query v5** for caching, background updates, and loading states:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+
+const { data, isLoading, error } = useQuery({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+});
+```
+
+**Guidelines:**
+- Use `useQuery` for data fetching in components
+- Query keys should be arrays: `['resource', id]` for detail queries
+- Let TanStack Query handle loading/error states
+- Default stale time: 5 minutes (configured in `QueryProvider`)
+
+### Example API Layer Pattern
+
+```typescript
+// src/lib/api.ts
+export interface User { /* ... */ }
+
+export async function fetchUsers(): Promise<User[]> {
+  const response = await api.get<User[]>('/api/admin/users');
+  return response.data;
+}
+```
+
+```typescript
+// src/pages/UsersPage.tsx
+const { data: users = [], isLoading, error } = useQuery<User[]>({
+  queryKey: ['users'],
+  queryFn: fetchUsers,
+});
+```

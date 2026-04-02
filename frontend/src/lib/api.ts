@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { API_BASE_URL } from './config';
 
 /**
@@ -12,27 +13,19 @@ export interface User {
   createdAt: string;
 }
 
+// Axios instance with default config
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 /**
  * Fetch all users (admin only)
  */
 export async function fetchUsers(): Promise<User[]> {
-  const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
-    method: 'GET',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('Unauthorized');
-    }
-    if (res.status === 403) {
-      throw new Error('Forbidden: Admin access required');
-    }
-    throw new Error('Failed to fetch users');
-  }
-
-  return res.json();
+  const response = await api.get<User[]>('/api/admin/users');
+  return response.data;
 }
