@@ -50,16 +50,16 @@ app.use((req, res, next) => {
   next();
 });
 
-// Auth routes with rate limiting (must be before express.json())
+// Body parsing middleware (must be before routes)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// Auth routes with rate limiting
 app.use('/api/auth', authLimiter, authRoutes);
 
 // Admin routes (protected by requireAdmin middleware)
 app.use('/api/admin', adminRoutes);
-
-// Other middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(cookieParser());
 
 // Health check (rate limited)
 app.get('/api/health', generalLimiter, async (req, res) => {
@@ -81,10 +81,10 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   // Log full error for debugging
   console.error('Error:', err.message);
   console.error('Stack:', err.stack);
-  
+
   // Return generic error in production, details in development
   const isProduction = process.env.NODE_ENV === 'production';
-  
+
   res.status(500).json({
     error: 'Internal server error',
     ...(isProduction ? {} : { details: err.message }),

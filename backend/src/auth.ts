@@ -1,5 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
+import { admin } from 'better-auth/plugins';
 import bcrypt from 'bcrypt';
 import prisma from './lib/prisma.js';
 
@@ -51,6 +52,11 @@ export const auth = betterAuth({
     .split(',')
     .filter(Boolean)
     .map((origin) => origin.trim()),
+  plugins: [
+    admin({
+      adminUserIds: process.env.ADMIN_USER_IDS?.split(',') || [],
+    }),
+  ],
 });
 
 export type Auth = typeof auth;

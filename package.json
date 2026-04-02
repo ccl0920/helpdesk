@@ -2,7 +2,7 @@
   "name": "helpdesk",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["backend", "frontend"],
+  "workspaces": ["backend", "frontend", "common"],
   "scripts": {
     "dev": "concurrently \"bun run --cwd backend dev\" \"bun run --cwd frontend dev\"",
     "dev:backend": "bun run --cwd backend dev",

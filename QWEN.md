@@ -27,6 +27,12 @@ helpdesk/
 │   │   └── index.ts      # Entry point
 │   ├── package.json
 │   └── tsconfig.json
+├── common/               # Shared schemas and types
+│   ├── src/
+│   │   ├── schemas/      # Zod schemas
+│   │   └── index.ts      # Package entry point
+│   ├── package.json
+│   └── tsconfig.json
 ├── frontend/             # React application
 │   ├── src/
 │   │   ├── components/   # Reusable components
@@ -154,122 +160,211 @@ const { user, isAdmin } = useAuth();
 - Follow existing project conventions for imports, naming, and structure
 - Always use `prisma migrate dev` for development, never `prisma db push`
 
-## shadcn/ui Configuration
-
-### Installed Components
-- `button` - Button component with variants (default, secondary, outline, destructive, ghost, link)
-- `input` - Form input field with proper styling
-- `label` - Form label with proper styling
-- `alert` - Alert messages with variants (default, destructive)
-- `card` - Card container with Header, Title, Description, Content
-
-### Import Alias
-- Use `@/` alias for `src/` directory (configured in `tsconfig.json` and `vite.config.ts`)
-- Example: `import { Button } from '@/components/ui/button'`
-
-### Adding New Components
-```bash
-cd frontend
-bunx shadcn@latest add <component-name>
-```
-
-### Theme Colors
-Use CSS variables for theming (supports light/dark mode):
-- `bg-background`, `text-foreground` - Base colors
-- `bg-card`, `text-card-foreground` - Card surfaces
-- `text-muted-foreground` - Secondary text
-- `border-border` - Borders and dividers
-- `bg-primary`, `text-primary-foreground` - Primary actions
-- `bg-destructive`, `text-destructive-foreground` - Destructive actions
-
-## Authentication
+## Shared Code (Common Package)
 
 ### Overview
-Authentication is implemented using **Better Auth** library with email/password credentials and session-based authentication.
+The `@helpdesk/common` package contains shared Zod schemas that are used by both frontend and backend for consistent validation.
 
-### Backend API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/auth/sign-in/email` | Sign in with email and password |
-| `POST` | `/api/auth/sign-out` | Sign out and clear session |
-| `GET` | `/api/auth/get-session` | Get current session and user |
-
-### Frontend Implementation
-
-#### Auth Context (`src/context/AuthContext.tsx`)
-Provides authentication state and methods throughout the app:
-
-```typescript
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  isAdmin: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  refreshSession: () => Promise<void>;
-}
+### Project Structure
+```
+common/
+├── src/
+│   ├── schemas/
+│   │   └── user.ts       # User-related schemas
+│   └── index.ts          # Package entry point (exports all schemas)
+├── package.json
+└── tsconfig.json
 ```
 
-The `User` interface includes a `role` field: `'AGENT' | 'ADMIN'`.
+### Defining Zod Schemas
 
-#### useAuth Hook (`src/hooks/useAuth.ts`)
-Custom hook to access auth context:
-```typescript
-const { user, isAuthenticated, login, logout } = useAuth();
-```
+1. **Create a new schema file** in `common/src/schemas/`:
+   ```typescript
+   // common/src/schemas/user.ts
+   import { z } from 'zod';
 
-#### Protected Routes
-Use `ProtectedRoute` component to guard authenticated pages:
-```typescript
-<ProtectedRoute>
-  <YourComponent />
-</ProtectedRoute>
-```
+   export const createUserSchema = z.object({
+     name: z.string().trim().min(3, 'Name must be at least 3 characters'),
+     email: z.string().email('Invalid email format'),
+     password: z.string().min(8, 'Password must be at least 8 characters'),
+     role: z.enum(['AGENT', 'ADMIN'], { message: 'Role must be AGENT or ADMIN' }),
+   });
 
-Use `AdminRoute` component to guard admin-only pages:
-```typescript
-<AdminRoute>
-  <YourComponent />
-</AdminRoute>
-```
+   export type CreateUserInput = z.infer<typeof createUserSchema>;
+   ```
 
-#### User Roles
-The `User` interface includes a `role` field (`'AGENT' | 'ADMIN'`). The auth context provides an `isAdmin` boolean helper.
+2. **Export from `common/src/index.ts`**:
+   ```typescript
+   export { createUserSchema, type CreateUserInput } from './schemas/user';
+   ```
 
-### User Interface
+3. **Add dependency** to backend/frontend `package.json`:
+   ```json
+   {
+     "dependencies": {
+       "@helpdesk/common": "*"
+     }
+   }
+   ```
 
-#### Login Page (`src/pages/LoginPage.tsx`)
-- Email and password form with validation (Zod schema)
-- Error handling with shadcn Alert component
-- Demo credentials display for testing
+4. **Import in frontend/backend**:
+   ```typescript
+   // Frontend (React Hook Form)
+   import { createUserSchema, type CreateUserInput } from '@helpdesk/common';
+   
+   const { register, handleSubmit } = useForm<CreateUserInput>({
+     resolver: zodResolver(createUserSchema),
+   });
 
-#### Demo Credentials
-```
-Email: admin@example.com
-Password: password
-```
+   // Backend (Express route validation)
+   import { createUserSchema } from '@helpdesk/common';
+   
+   router.post('/users', async (req, res) => {
+     const result = createUserSchema.safeParse(req.body);
+     if (!result.success) {
+       return res.status(400).json({ error: result.error.issues[0]?.message });
+     }
+   });
+   ```
 
-### Session Management
-- Sessions are stored via HTTP-only cookies
-- Session is refreshed on app load and after login
-- Automatic redirect to `/login` if unauthenticated
+### Benefits
+- **Single source of truth** - Validation logic defined once
+- **Type safety** - Shared types inferred from schemas
+- **Consistency** - Frontend and backend use identical validation rules
+- **Maintainability** - Changes to validation propagate to both ends
 
 ### Files Reference
 
 | File | Purpose |
 |------|---------|
-| `backend/src/index.ts` | Better Auth server setup |
-| `backend/src/routes/auth.ts` | Auth route handlers |
-| `backend/src/auth.ts` | Better Auth configuration with user roles |
-| `frontend/src/context/AuthContext.tsx` | Auth context provider |
-| `frontend/src/hooks/useAuth.ts` | Auth hook |
-| `frontend/src/pages/LoginPage.tsx` | Login form |
-| `frontend/src/components/ProtectedRoute.tsx` | Route guard for authenticated pages |
-| `frontend/src/components/AdminRoute.tsx` | Route guard for admin-only pages |
-| `frontend/src/pages/UsersPage.tsx` | Admin-only users management page |
+| `common/src/index.ts` | Package entry point |
+| `common/src/schemas/user.ts` | User-related schemas |
+| `common/package.json` | Package configuration |
+
+## Form Handling (React Hook Form + Zod)
+
+### Overview
+Forms use **React Hook Form** with **Zod** validation via `@hookform/resolvers`. This provides type-safe form validation with minimal re-renders.
+
+### Usage Pattern
+
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createUserSchema, type CreateUserInput } from '@helpdesk/common';
+
+// Use in component
+export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModalProps) {
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CreateUserInput>({
+    resolver: zodResolver(createUserSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'AGENT',
+    },
+  });
+
+  const handleFormSubmit = async (data: CreateUserInput) => {
+    await onSubmit(data);
+    reset();
+  };
+
+  return (
+    <form onSubmit={handleSubmit(handleFormSubmit)}>
+      <Input {...register('name')} placeholder="Name" />
+      {errors.name && <p>{errors.name.message}</p>}
+      
+      <Input {...register('email')} type="email" placeholder="Email" />
+      {errors.email && <p>{errors.email.message}</p>}
+      
+      <Input {...register('password')} type="password" placeholder="Password" />
+      {errors.password && <p>{errors.password.message}</p>}
+      
+      <Select value={watch('role')} onValueChange={(v) => setValue('role', v)}>
+        <SelectItem value="AGENT">Agent</SelectItem>
+        <SelectItem value="ADMIN">Admin</SelectItem>
+      </Select>
+      {errors.role && <p>{errors.role.message}</p>}
+      
+      <Button type="submit" disabled={isSubmitting}>Create</Button>
+    </form>
+  );
+}
+```
+
+### Key Hooks
+
+| Hook | Purpose |
+|------|---------|
+| `register` | Register input/select fields with form |
+| `handleSubmit` | Wrap submit handler with validation |
+| `setValue` | Programmatically set field value (for Select) |
+| `watch` | Watch field values (for controlled Select) |
+| `reset` | Reset form to default values |
+| `formState` | Access errors, isSubmitting, etc. |
+
+### Error Display
+
+```typescript
+{errors.fieldName && (
+  <p className="text-sm text-destructive">{errors.fieldName.message}</p>
+)}
+```
+
+### Files Reference
+
+| File | Purpose |
+|------|---------|
+| `frontend/src/components/CreateUserModal.tsx` | Example form with react-hook-form + Zod |
+
+## Backend Validation (Zod)
+
+### Overview
+Backend request validation uses **Zod** for schema validation on API endpoints. Schemas are imported from `@helpdesk/common` for consistency with frontend forms.
+
+### Usage Pattern
+
+```typescript
+import { createUserSchema } from '@helpdesk/common';
+
+// Validate in route handler
+router.post('/users', async (req, res) => {
+  const validationResult = createUserSchema.safeParse(req.body);
+  
+  if (!validationResult.success) {
+    const errorMessage = validationResult.error.issues[0]?.message || 'Invalid request data';
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const { name, email, password, role } = validationResult.data;
+  // ... proceed with valid data
+});
+```
+
+### Common Validations
+
+| Validation | Zod Syntax |
+|------------|------------|
+| Required string | `z.string()` |
+| Min length | `z.string().min(3, 'Message')` |
+| Email format | `z.string().email('Message')` |
+| Enum value | `z.enum(['A', 'B'])` |
+| Number range | `z.number().min(1).max(100)` |
+
+### Files Reference
+
+| File | Purpose |
+|------|---------|
+| `backend/src/routes/admin.ts` | Admin routes with Zod validation |
+| `common/src/schemas/` | Shared Zod schemas |
 
 ## E2E Testing (Playwright)
 
@@ -379,6 +474,35 @@ const { data, isLoading, error } = useQuery({
 - Let TanStack Query handle loading/error states
 - Default stale time: 5 minutes (configured in `QueryProvider`)
 
+### useMutation for Data Mutations
+
+Use `useMutation` for POST, PUT, DELETE operations:
+
+```typescript
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createUser } from '@/lib/api';
+
+const queryClient = useQueryClient();
+
+const createMutation = useMutation({
+  mutationFn: createUser,
+  onSuccess: () => {
+    // Invalidate and refetch queries
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    // Close modal or reset form
+    setIsModalOpen(false);
+  },
+});
+
+// Use in component
+const handleCreateUser = async (data: CreateUserInput) => {
+  await createMutation.mutateAsync(data);
+};
+
+// Access mutation state
+const { isPending, isError, error, data } = createMutation;
+```
+
 ### Example API Layer Pattern
 
 ```typescript
@@ -389,13 +513,27 @@ export async function fetchUsers(): Promise<User[]> {
   const response = await api.get<User[]>('/api/admin/users');
   return response.data;
 }
+
+export async function createUser(data: CreateUserInput): Promise<User> {
+  const response = await api.post<User>('/api/admin/users', data);
+  return response.data;
+}
 ```
 
 ```typescript
 // src/pages/UsersPage.tsx
+// Query
 const { data: users = [], isLoading, error } = useQuery<User[]>({
   queryKey: ['users'],
   queryFn: fetchUsers,
+});
+
+// Mutation
+const createMutation = useMutation({
+  mutationFn: createUser,
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  },
 });
 ```
 

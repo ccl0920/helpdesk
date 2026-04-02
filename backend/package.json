@@ -13,6 +13,7 @@
     "db:seed": "bun run prisma db seed"
   },
   "dependencies": {
+    "@helpdesk/common": "*",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "bcrypt": "^6.0.0",
@@ -24,7 +25,8 @@
     "express-rate-limit": "^8.3.2",
     "helmet": "^8.1.0",
     "pg": "^8.20.0",
-    "prisma": "^7.5.0"
+    "prisma": "^7.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
