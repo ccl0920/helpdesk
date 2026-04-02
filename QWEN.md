@@ -398,3 +398,170 @@ const { data: users = [], isLoading, error } = useQuery<User[]>({
   queryFn: fetchUsers,
 });
 ```
+
+## Component Testing
+
+### Using the react-component-tester Agent
+
+When implementing new React components, pages, or features that require test validation, use the **react-component-tester** agent to write component tests.
+
+**When to trigger the agent:**
+- After creating a new React component or page
+- When adding test coverage to existing components
+- When refactoring components and need to update tests
+- When implementing new features that require test validation
+- When adding form validations or error handling tests
+
+**How to use:**
+```
+Use the agent tool with subagent_type: "react-component-tester"
+Provide a clear description of what needs to be tested
+Include any specific scenarios or edge cases to cover
+```
+
+The agent will:
+- Write production-ready Vitest tests using React Testing Library
+- Use resilient queries (getByRole, getByLabel, getByTestId)
+- Cover happy paths and edge cases
+- Mock API calls with MSW for TanStack Query tests
+- Provide instructions for running the tests
+
+### Overview
+Component tests use **Vitest** with **React Testing Library** and **MSW** for API mocking.
+
+### Test Commands
+
+| Command | Description |
+|---------|-------------|
+| `bun run test` | Run tests in watch mode |
+| `bun run test:run` | Run tests once (CI mode) |
+| `bun run test:ui` | Open Vitest UI dashboard |
+
+### Test File Location
+Place test files next to the components they test:
+- `src/pages/UsersPage.test.tsx`
+- `src/components/NavBar.test.tsx`
+
+### Test Setup Files
+
+| File | Purpose |
+|------|---------|
+| `vite.config.ts` | Vitest configuration (jsdom environment) |
+| `src/test/setup.ts` | Global test setup (jest-dom matchers) |
+| `src/test/test-utils.tsx` | Custom render with providers |
+
+### Writing Tests
+
+#### Basic Test Structure
+
+```typescript
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { render } from '@/test/test-utils';
+import { YourComponent } from './YourComponent';
+
+// Mock data
+const mockData = { /* ... */ };
+
+// Setup MSW server
+const server = setupServer(
+  http.get('/api/endpoint', () => HttpResponse.json(mockData))
+);
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+describe('YourComponent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('renders correctly', async () => {
+    render(<YourComponent />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Expected Text')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+#### Testing with TanStack Query
+
+```typescript
+it('displays data after fetch', async () => {
+  render(<YourComponent />);
+  
+  // Initial loading state
+  expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+  
+  // Wait for data
+  await waitFor(() => {
+    expect(screen.getByText('Loaded Data')).toBeInTheDocument();
+  });
+});
+```
+
+#### Testing Error States
+
+```typescript
+it('displays error message', async () => {
+  server.use(
+    http.get('/api/endpoint', () => 
+      new HttpResponse(null, { status: 500 })
+    )
+  );
+  
+  render(<YourComponent />);
+  
+  await waitFor(() => {
+    expect(screen.getByText(/Request failed with status code 500/))
+      .toBeInTheDocument();
+  });
+});
+```
+
+#### Testing Empty States
+
+```typescript
+it('displays empty state', async () => {
+  server.use(
+    http.get('/api/endpoint', () => HttpResponse.json([]))
+  );
+  
+  render(<YourComponent />);
+  
+  await waitFor(() => {
+    expect(screen.getByText('No items found')).toBeInTheDocument();
+  });
+});
+```
+
+### Best Practices
+
+1. **Use `waitFor` for async operations** - TanStack Query updates are async
+2. **Mock all API calls with MSW** - Don't rely on real backend
+3. **Test user-facing text** - Use `getByText`, `getByRole` over testids
+4. **Test loading, error, and empty states** - Cover all UI states
+5. **Use `within()` for scoped queries** - Avoid finding duplicate elements
+6. **Reset handlers between tests** - Use `server.resetHandlers()` in `afterEach`
+7. **Use `vi.clearAllMocks()` in `beforeEach`** - Clean state for each test
+
+### Example: Testing a Table Component
+
+```typescript
+import { within } from '@testing-library/react';
+
+it('renders table with correct data', async () => {
+  render(<UsersPage />);
+  
+  await waitFor(() => {
+    const table = screen.getByRole('table');
+    const rows = within(table).getAllByRole('row');
+    expect(rows.length).toBe(4); // header + 3 data rows
+  });
+});
+```
