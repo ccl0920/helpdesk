@@ -44,6 +44,13 @@ export async function fetchUsers(): Promise<User[]> {
  * Create a new user (admin only)
  */
 export async function createUser(data: CreateUserInput): Promise<User> {
-  const response = await api.post<User>('/api/admin/users', data);
-  return response.data;
+  try {
+    const response = await api.post<User>('/api/admin/users', data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
 }

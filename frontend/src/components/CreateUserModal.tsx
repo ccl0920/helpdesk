@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema, type CreateUserInput } from '@helpdesk/common';
@@ -5,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -20,12 +22,14 @@ interface CreateUserModalProps {
 }
 
 export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModalProps) {
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
     setValue,
     watch,
     reset,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<CreateUserInput>({
     resolver: zodResolver(createUserSchema),
@@ -40,17 +44,31 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
   const roleValue = watch('role');
 
   const handleFormSubmit = async (data: CreateUserInput) => {
+    setGeneralError(null);
     try {
       await onSubmit(data);
       reset();
       onOpenChange(false);
     } catch (error) {
-      // Error is handled by the parent component via query error handling
+      if (error instanceof Error) {
+        // Check if it's an email already exists error
+        if (error.message.includes('Email already exists')) {
+          setError('email', {
+            type: 'server',
+            message: 'Email already exists',
+          });
+        } else {
+          setGeneralError(error.message);
+        }
+      } else {
+        setGeneralError('Failed to create user');
+      }
     }
   };
 
   const handleClose = () => {
     reset();
+    setGeneralError(null);
     onOpenChange(false);
   };
 
@@ -63,6 +81,12 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            {generalError && (
+              <Alert variant="destructive">
+                <AlertDescription>{generalError}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="grid gap-2">
               <Label htmlFor="name">Name</Label>
               <Input
@@ -70,6 +94,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
                 autoComplete="name"
                 disabled={isSubmitting}
                 placeholder="Enter user name"
+                className={errors.name ? 'border-destructive ring-3 ring-destructive/20' : ''}
                 {...register('name')}
               />
               {errors.name && (
@@ -85,6 +110,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
                 autoComplete="new-email"
                 disabled={isSubmitting}
                 placeholder="Enter email address"
+                className={errors.email ? 'border-destructive ring-3 ring-destructive/20' : ''}
                 {...register('email')}
               />
               {errors.email && (
@@ -100,6 +126,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
                 autoComplete="new-password"
                 disabled={isSubmitting}
                 placeholder="Enter password"
+                className={errors.password ? 'border-destructive ring-3 ring-destructive/20' : ''}
                 {...register('password')}
               />
               {errors.password && (
@@ -113,7 +140,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
                 value={roleValue}
                 onValueChange={(value) => value && setValue('role', value as 'AGENT' | 'ADMIN')}
               >
-                <SelectTrigger>
+                <SelectTrigger className={errors.role ? 'border-destructive ring-3 ring-destructive/20' : ''}>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
