@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { updateUserSchema, type UpdateUserInput, Role } from '@helpdesk/common';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,15 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Role } from '@/lib/role';
 import type { User } from '@/lib/api';
 
-const userFormSchema = z.object({
-  name: z.string().trim().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
-  role: z.enum([Role.AGENT, Role.ADMIN], { message: 'Role must be AGENT or ADMIN' }),
-});
+// Extend the common schema for frontend-specific use
+const userFormSchema = updateUserSchema;
 
 type UserFormData = z.infer<typeof userFormSchema>;
 
@@ -30,7 +26,7 @@ interface UserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
-  onSubmit: (data: UserFormData) => Promise<void>;
+  onSubmit: (data: UpdateUserInput) => Promise<void>;
 }
 
 export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormModalProps) {
