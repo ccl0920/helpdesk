@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createUserSchema, type CreateUserInput } from '@helpdesk/common';
+import { z } from 'zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,15 +14,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { User } from '@/lib/api';
 
-interface CreateUserModalProps {
+const userFormSchema = z.object({
+  name: z.string().trim().min(3, 'Name must be at least 3 characters'),
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
+  role: z.enum(['AGENT', 'ADMIN'], { message: 'Role must be AGENT or ADMIN' }),
+});
+
+type UserFormData = z.infer<typeof userFormSchema>;
+
+interface UserFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: CreateUserInput) => Promise<void>;
+  user: User | null;
+  onSubmit: (data: UserFormData) => Promise<void>;
 }
 
-export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModalProps) {
+export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormModalProps) {
   const [generalError, setGeneralError] = useState<string | null>(null);
+  const isEditing = !!user;
+
   const {
     register,
     handleSubmit,
@@ -31,8 +44,8 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<CreateUserInput>({
-    resolver: zodResolver(createUserSchema),
+  } = useForm<UserFormData>({
+    resolver: zodResolver(userFormSchema),
     defaultValues: {
       name: '',
       email: '',
@@ -43,7 +56,29 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
 
   const roleValue = watch('role');
 
-  const handleFormSubmit = async (data: CreateUserInput) => {
+  // Populate form when user changes or modal opens
+  useEffect(() => {
+    if (open) {
+      if (user) {
+        reset({
+          name: user.name || '',
+          email: user.email,
+          password: '',
+          role: user.role,
+        });
+      } else {
+        reset({
+          name: '',
+          email: '',
+          password: '',
+          role: 'AGENT',
+        });
+      }
+      setGeneralError(null);
+    }
+  }, [user, open, reset]);
+
+  const handleFormSubmit = async (data: UserFormData) => {
     setGeneralError(null);
     try {
       await onSubmit(data);
@@ -51,7 +86,6 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
       onOpenChange(false);
     } catch (error) {
       if (error instanceof Error) {
-        // Check if it's an email already exists error
         if (error.message.includes('Email already exists')) {
           setError('email', {
             type: 'server',
@@ -61,7 +95,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
           setGeneralError(error.message);
         }
       } else {
-        setGeneralError('Failed to create user');
+        setGeneralError(isEditing ? 'Failed to update user' : 'Failed to create user');
       }
     }
   };
@@ -75,9 +109,9 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
-        <form onSubmit={handleSubmit(handleFormSubmit)}>
+        <form onSubmit={handleSubmit(handleFormSubmit)} noValidate>
           <DialogHeader>
-            <DialogTitle>Create New User</DialogTitle>
+            <DialogTitle>{isEditing ? 'Edit User' : 'Create New User'}</DialogTitle>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -119,13 +153,15 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">
+                Password {isEditing ? '(leave blank to keep current)' : ''}
+              </Label>
               <Input
                 id="password"
                 type="password"
                 autoComplete="new-password"
                 disabled={isSubmitting}
-                placeholder="Enter password"
+                placeholder={isEditing ? 'Enter new password (optional)' : 'Enter password'}
                 className={errors.password ? 'border-destructive ring-3 ring-destructive/20' : ''}
                 {...register('password')}
               />
@@ -159,7 +195,7 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create User'}
+              {isSubmitting ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update User' : 'Create User')}
             </Button>
           </DialogFooter>
         </form>

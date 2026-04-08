@@ -23,6 +23,16 @@ export interface CreateUserInput {
   role: 'AGENT' | 'ADMIN';
 }
 
+/**
+ * Update user input data (password is optional)
+ */
+export interface UpdateUserInput {
+  name: string;
+  email: string;
+  password?: string;
+  role: 'AGENT' | 'ADMIN';
+}
+
 // Axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -46,6 +56,21 @@ export async function fetchUsers(): Promise<User[]> {
 export async function createUser(data: CreateUserInput): Promise<User> {
   try {
     const response = await api.post<User>('/api/admin/users', data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Update a user (admin only)
+ */
+export async function updateUser(id: string, data: UpdateUserInput): Promise<User> {
+  try {
+    const response = await api.put<User>(`/api/admin/users/${id}`, data);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.error) {

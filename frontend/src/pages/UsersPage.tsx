@@ -1,21 +1,18 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUsers, createUser, User } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { fetchUsers, createUser, updateUser, User } from '@/lib/api';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusIcon } from 'lucide-react';
-import { CreateUserModal } from '@/components/CreateUserModal';
+import { UserFormModal } from '@/components/UserFormModal';
 import { UserTable } from '@/components/UserTable';
-import type { CreateUserInput } from '@helpdesk/common';
 
 export function UsersPage() {
   const queryClient = useQueryClient();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const {
-    data: users = [],
-    isLoading,
-  } = useQuery<User[]>({
+  const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers,
   });
@@ -24,42 +21,68 @@ export function UsersPage() {
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      setIsModalOpen(false);
+      setIsCreating(false);
     },
   });
 
-  const handleCreateUser = async (data: CreateUserInput) => {
-    await createMutation.mutateAsync(data);
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { name: string; email: string; password?: string; role: 'AGENT' | 'ADMIN' } }) =>
+      updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditingUser(null);
+    },
+  });
+
+  const activeUser = editingUser;
+  const isModalOpen = isCreating || !!editingUser;
+
+  const handleSubmit = async (data: { name: string; email: string; password?: string; role: 'AGENT' | 'ADMIN' }) => {
+    if (editingUser) {
+      await updateMutation.mutateAsync({ id: editingUser.id, data });
+    } else {
+      if (!data.password) {
+        throw new Error('Password is required');
+      }
+      await createMutation.mutateAsync(data as { name: string; email: string; password: string; role: 'AGENT' | 'ADMIN' });
+    }
   };
 
   return (
     <div>
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-foreground mb-2">User Management</h1>
-            <p className="text-muted-foreground">View and manage all users in the system</p>
-          </div>
-          <Button onClick={() => setIsModalOpen(true)}>
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Create User
-          </Button>
-        </div>
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-4xl font-bold text-foreground">User Management</h1>
+        <Button onClick={() => setIsCreating(true)}>
+          <PlusIcon className="w-4 h-4 mr-2" />
+          Create User
+        </Button>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <UserTable users={users} isLoading={isLoading} />
+        <CardContent className="pt-6">
+          {error && (
+            <p className="text-sm text-destructive mb-4">
+              {error instanceof Error ? error.message : 'Failed to load users'}
+            </p>
+          )}
+          <UserTable
+            users={users}
+            isLoading={isLoading}
+            onEdit={setEditingUser}
+          />
         </CardContent>
       </Card>
 
-      <CreateUserModal
+      <UserFormModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        onSubmit={handleCreateUser}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsCreating(false);
+            setEditingUser(null);
+          }
+        }}
+        user={activeUser}
+        onSubmit={handleSubmit}
       />
     </div>
   );

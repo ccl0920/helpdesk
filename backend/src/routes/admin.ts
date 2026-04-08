@@ -3,12 +3,103 @@ import { requireAdmin } from '../middleware/auth.js';
 import prisma, { Role } from '../lib/prisma.js';
 import { auth } from '../auth.js';
 import bcrypt from 'bcrypt';
+import { z } from 'zod';
 import { createUserSchema } from '@helpdesk/common';
 
 const router = Router();
 
 // All admin routes are protected by requireAdmin middleware
 router.use(requireAdmin);
+
+/**
+ * Zod schema for updating a user
+ */
+const updateUserSchema = z.object({
+  name: z.string().trim().min(3, 'Name must be at least 3 characters'),
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
+  role: z.enum(['AGENT', 'ADMIN'], { message: 'Role must be AGENT or ADMIN' }),
+});
+
+/**
+ * PUT /api/admin/users/:id
+ * Update a user (admin only)
+ */
+router.put('/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate request body with Zod
+    const validationResult = updateUserSchema.safeParse(req.body);
+
+    if (!validationResult.success) {
+      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid request data';
+      return res.status(400).json({ error: errorMessage });
+    }
+
+    const { name, email, password, role } = validationResult.data;
+
+    // Check if user exists
+    const existingUser = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!existingUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if email is taken by another user
+    const emailTaken = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (emailTaken && emailTaken.id !== id) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
+    // Update user and optionally password
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      // Update user details
+      const user = await tx.user.update({
+        where: { id },
+        data: {
+          email,
+          name,
+          role: role as Role,
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      // Update password if provided
+      if (password && password.length > 0) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+        await tx.account.updateMany({
+          where: {
+            userId: id,
+            providerId: 'credential',
+          },
+          data: {
+            password: hashedPassword,
+          },
+        });
+      }
+
+      return user;
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
 
 /**
  * POST /api/admin/users
@@ -18,7 +109,7 @@ router.post('/users', async (req, res) => {
   try {
     // Validate request body with Zod schema from common package
     const validationResult = createUserSchema.safeParse(req.body);
-    
+
     if (!validationResult.success) {
       const errorMessage = validationResult.error.issues[0]?.message || 'Invalid request data';
       return res.status(400).json({ error: errorMessage });
@@ -143,7 +234,7 @@ router.delete('/users/:id', async (req, res) => {
 
     // Type assertion: session is guaranteed by requireAdmin middleware
     const session = (req as Request & { session?: typeof auth.$Infer.Session }).session;
-    
+
     // Prevent self-deletion
     if (session?.user.id === id) {
       return res.status(400).json({ error: 'Cannot delete your own account' });

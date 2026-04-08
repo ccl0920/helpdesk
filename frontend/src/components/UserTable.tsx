@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -8,14 +9,16 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PencilIcon } from 'lucide-react';
 import type { User } from '@/lib/api';
 
 interface UserTableProps {
   users: User[];
   isLoading: boolean;
+  onEdit?: (user: User) => void;
 }
 
-export function UserTable({ users, isLoading }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit }: UserTableProps) {
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -34,6 +37,7 @@ export function UserTable({ users, isLoading }: UserTableProps) {
             <TableHead>Role</TableHead>
             <TableHead>Verified</TableHead>
             <TableHead>Created</TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -44,6 +48,7 @@ export function UserTable({ users, isLoading }: UserTableProps) {
               <TableCell><Skeleton className="h-6 w-16" /></TableCell>
               <TableCell><Skeleton className="h-6 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+              <TableCell><Skeleton className="h-8 w-8" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -60,6 +65,7 @@ export function UserTable({ users, isLoading }: UserTableProps) {
           <TableHead>Role</TableHead>
           <TableHead>Verified</TableHead>
           <TableHead>Created</TableHead>
+          <TableHead>Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -85,6 +91,18 @@ export function UserTable({ users, isLoading }: UserTableProps) {
             </TableCell>
             <TableCell className="text-muted-foreground">
               {formatDate(user.createdAt)}
+            </TableCell>
+            <TableCell>
+              {onEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(user)}
+                  aria-label={`Edit ${user.name || user.email}`}
+                >
+                  <PencilIcon className="w-4 h-4" />
+                </Button>
+              )}
             </TableCell>
           </TableRow>
         ))}

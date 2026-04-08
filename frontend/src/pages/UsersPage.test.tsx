@@ -75,9 +75,6 @@ describe('UsersPage', () => {
     expect(screen.getByText('admin@example.com')).toBeInTheDocument();
     expect(screen.getByText('agent@example.com')).toBeInTheDocument();
     expect(screen.getByText('newuser@example.com')).toBeInTheDocument();
-
-    // Check user count
-    expect(screen.getByText('3 users in the system')).toBeInTheDocument();
   });
 
   it('displays user roles correctly', async () => {
@@ -143,11 +140,11 @@ describe('UsersPage', () => {
     });
   });
 
-  it('displays page title and description', () => {
+  it('displays page title and create button', () => {
     render(<UsersPage />);
 
     expect(screen.getByText('User Management')).toBeInTheDocument();
-    expect(screen.getByText('View all users in the system')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create user/i })).toBeInTheDocument();
   });
 });
 
@@ -200,7 +197,7 @@ describe('UsersPage - Error Handling', () => {
 });
 
 describe('UsersPage - Empty State', () => {
-  it('displays zero users message when no users exist', async () => {
+  it('displays empty table body when no users exist', async () => {
     server.use(
       http.get(`${API_BASE_URL}/api/admin/users`, () => {
         return HttpResponse.json([]);
@@ -210,7 +207,8 @@ describe('UsersPage - Empty State', () => {
     render(<UsersPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('0 users in the system')).toBeInTheDocument();
+      const tableBody = screen.getByRole('table').querySelector('tbody');
+      expect(tableBody?.children.length).toBe(0);
     });
   });
 });
