@@ -9,16 +9,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PencilIcon } from 'lucide-react';
+import { PencilIcon, Trash2Icon } from 'lucide-react';
+import { Role } from '@/lib/role';
 import type { User } from '@/lib/api';
 
 interface UserTableProps {
   users: User[];
   isLoading: boolean;
   onEdit?: (user: User) => void;
+  onDelete?: (user: User) => void;
 }
 
-export function UserTable({ users, isLoading, onEdit }: UserTableProps) {
+export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps) {
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -48,7 +50,7 @@ export function UserTable({ users, isLoading, onEdit }: UserTableProps) {
               <TableCell><Skeleton className="h-6 w-16" /></TableCell>
               <TableCell><Skeleton className="h-6 w-20" /></TableCell>
               <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-              <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+              <TableCell><Skeleton className="h-8 w-16" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -74,7 +76,7 @@ export function UserTable({ users, isLoading, onEdit }: UserTableProps) {
             <TableCell className="font-medium">{user.email}</TableCell>
             <TableCell>{user.name || '-'}</TableCell>
             <TableCell>
-              <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
+              <Badge variant={user.role === Role.ADMIN ? 'default' : 'secondary'}>
                 {user.role}
               </Badge>
             </TableCell>
@@ -93,16 +95,29 @@ export function UserTable({ users, isLoading, onEdit }: UserTableProps) {
               {formatDate(user.createdAt)}
             </TableCell>
             <TableCell>
-              {onEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onEdit(user)}
-                  aria-label={`Edit ${user.name || user.email}`}
-                >
-                  <PencilIcon className="w-4 h-4" />
-                </Button>
-              )}
+              <div className="flex items-center gap-1">
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onEdit(user)}
+                    aria-label={`Edit ${user.name || user.email}`}
+                  >
+                    <PencilIcon className="w-4 h-4" />
+                  </Button>
+                )}
+                {onDelete && user.role !== Role.ADMIN && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(user)}
+                    aria-label={`Delete ${user.name || user.email}`}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2Icon className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

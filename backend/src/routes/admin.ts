@@ -39,13 +39,17 @@ router.put('/users/:id', async (req, res) => {
 
     const { name, email, password, role } = validationResult.data;
 
-    // Check if user exists
+    // Check if user exists and is not deleted
     const existingUser = await prisma.user.findUnique({
       where: { id },
     });
 
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (existingUser.deletedAt) {
+      return res.status(400).json({ error: 'Cannot update a deleted user' });
     }
 
     // Check if email is taken by another user
@@ -177,6 +181,9 @@ router.post('/users', async (req, res) => {
 router.get('/users', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
       select: {
         id: true,
         email: true,
@@ -226,7 +233,8 @@ router.put('/users/:id/role', async (req, res) => {
 
 /**
  * DELETE /api/admin/users/:id
- * Delete a user (admin only)
+ * Soft delete a user (admin only)
+ * Admin users cannot be deleted
  */
 router.delete('/users/:id', async (req, res) => {
   try {
@@ -240,8 +248,35 @@ router.delete('/users/:id', async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete your own account' });
     }
 
-    await prisma.user.delete({
+    // Check if user exists and is not already deleted
+    const user = await prisma.user.findUnique({
       where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.deletedAt) {
+      return res.status(400).json({ error: 'User is already deleted' });
+    }
+
+    // Prevent deleting admin users
+    if (user.role === 'ADMIN') {
+      return res.status(400).json({ error: 'Cannot delete admin users' });
+    }
+
+    // Soft delete by setting deletedAt and revoke all sessions
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
+
+      // Revoke all sessions for the deleted user
+      await tx.session.deleteMany({
+        where: { userId: id },
+      });
     });
 
     res.json({ message: 'User deleted successfully' });

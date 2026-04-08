@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { admin } from 'better-auth/plugins';
+import { APIError } from 'better-auth/api';
 import bcrypt from 'bcrypt';
 import prisma from './lib/prisma.js';
 
@@ -35,6 +36,25 @@ export const auth = betterAuth({
         required: true,
         defaultValue: 'AGENT',
         returned: true,
+      },
+    },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          // Check if the user is soft-deleted
+          const user = await prisma.user.findUnique({
+            where: { id: session.userId },
+            select: { deletedAt: true },
+          });
+
+          if (user?.deletedAt) {
+            throw new APIError('FORBIDDEN', {
+              message: 'Your account has been deleted. Please contact support.',
+            });
+          }
+        },
       },
     },
   },

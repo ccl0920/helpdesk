@@ -160,6 +160,32 @@ const { user, isAdmin } = useAuth();
 - Follow existing project conventions for imports, naming, and structure
 - Always use `prisma migrate dev` for development, never `prisma db push`
 
+### Using the Role Enum
+
+The frontend defines a `Role` enum that matches the Prisma schema. **Always use this enum instead of magic strings** when working with user roles.
+
+```typescript
+import { Role } from '@/lib/role';
+
+// ✅ Correct
+if (user.role === Role.ADMIN) { ... }
+role: Role.AGENT
+
+// ❌ Incorrect - don't use magic strings
+if (user.role === 'ADMIN') { ... }
+role: 'AGENT'
+```
+
+The enum is defined in `frontend/src/lib/role.ts`:
+```typescript
+export enum Role {
+  AGENT = 'AGENT',
+  ADMIN = 'ADMIN',
+}
+```
+
+Use `Role` type in interfaces and `z.enum([Role.AGENT, Role.ADMIN])` for Zod validation.
+
 ## Shared Code (Common Package)
 
 ### Overview
@@ -211,7 +237,8 @@ common/
    ```typescript
    // Frontend (React Hook Form)
    import { createUserSchema, type CreateUserInput } from '@helpdesk/common';
-   
+   import { Role } from '@/lib/role';
+
    const { register, handleSubmit } = useForm<CreateUserInput>({
      resolver: zodResolver(createUserSchema),
    });

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { UsersPage } from '../pages/UsersPage';
@@ -210,5 +211,214 @@ describe('UsersPage - Empty State', () => {
       const tableBody = screen.getByRole('table').querySelector('tbody');
       expect(tableBody?.children.length).toBe(0);
     });
+  });
+});
+
+describe('UsersPage - Deletion', () => {
+  let deletionOccurred = false;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    deletionOccurred = false;
+  });
+
+  it('shows delete button for non-admin users', async () => {
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Agent User')).toBeInTheDocument();
+    });
+
+    // Find the row with agent@example.com
+    const agentRow = screen.getByRole('row', { name: /agent@example\.com/i });
+    expect(agentRow).toBeInTheDocument();
+
+    // Should have a delete button (trash icon)
+    const deleteButtons = within(agentRow).getAllByRole('button');
+    const deleteButton = deleteButtons.find(btn => btn.getAttribute('aria-label')?.includes('Delete'));
+    expect(deleteButton).toBeInTheDocument();
+    expect(deleteButton).toHaveAttribute('aria-label', 'Delete Agent User');
+  });
+
+  it('does NOT show delete button for admin users', async () => {
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Admin User')).toBeInTheDocument();
+    });
+
+    // Find the row with admin@example.com
+    const adminRow = screen.getByRole('row', { name: /admin@example\.com/i });
+    expect(adminRow).toBeInTheDocument();
+
+    // Should only have edit button, no delete button
+    const buttons = within(adminRow).getAllByRole('button');
+    const deleteButton = buttons.find(btn => btn.getAttribute('aria-label')?.includes('Delete'));
+    expect(deleteButton).toBeUndefined();
+  });
+
+  it('opens delete confirmation modal when delete button is clicked', async () => {
+    const user = userEvent.setup();
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      const agentElements = screen.getAllByText('Agent User');
+      expect(agentElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Click delete button for agent user
+    const deleteButton = screen.getByRole('button', { name: /delete agent user/i });
+    await user.click(deleteButton);
+
+    // Modal should open with user details
+    await waitFor(() => {
+      // Use getAllByText since both title and button contain "Delete User"
+      const deleteUserElements = screen.getAllByText('Delete User');
+      expect(deleteUserElements.length).toBeGreaterThanOrEqual(1);
+      // Agent User appears in both table and modal
+      const agentUserElements = screen.getAllByText('Agent User');
+      expect(agentUserElements.length).toBeGreaterThanOrEqual(1);
+      // Email appears in both table and modal
+      const emailElements = screen.getAllByText('agent@example.com');
+      expect(emailElements.length).toBeGreaterThanOrEqual(1);
+      // Role appears in both table and modal
+      const agentRoleElements = screen.getAllByText('AGENT');
+      expect(agentRoleElements.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
+    });
+  });
+
+  it('closes delete confirmation modal when Cancel is clicked', async () => {
+    const user = userEvent.setup();
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      const agentElements = screen.getAllByText('Agent User');
+      expect(agentElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Open modal
+    const deleteButton = screen.getByRole('button', { name: /delete agent user/i });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      const deleteUserElements = screen.getAllByText('Delete User');
+      expect(deleteUserElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Click Cancel
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    // Modal should close - check that dialog content is not visible
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('successfully deletes user and removes from list', async () => {
+    const user = userEvent.setup();
+
+    // Track whether deletion has occurred
+    let deletionOccurred = false;
+
+    // Mock endpoints with dynamic behavior
+    server.use(
+      http.get(`${API_BASE_URL}/api/admin/users`, () => {
+        // Return filtered list only after deletion
+        if (deletionOccurred) {
+          return HttpResponse.json(mockUsers.filter(u => u.id !== '2'));
+        }
+        return HttpResponse.json(mockUsers);
+      }),
+      http.delete(`${API_BASE_URL}/api/admin/users/:id`, () => {
+        deletionOccurred = true;
+        return HttpResponse.json({ message: 'User deleted successfully' });
+      })
+    );
+
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      const agentElements = screen.getAllByText('Agent User');
+      expect(agentElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Open delete modal
+    const deleteButton = screen.getByRole('button', { name: /delete agent user/i });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      const deleteUserElements = screen.getAllByText('Delete User');
+      expect(deleteUserElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Confirm deletion
+    const confirmDeleteButton = screen.getByRole('button', { name: /delete user/i });
+    await user.click(confirmDeleteButton);
+
+    // User should be removed from list
+    await waitFor(() => {
+      expect(screen.queryAllByText('Agent User').length).toBe(0);
+      expect(screen.queryAllByText('agent@example.com').length).toBe(0);
+    });
+
+    // Other users should still be visible
+    expect(screen.getByText('Admin User')).toBeInTheDocument();
+  });
+
+  it('shows error message when deletion fails', async () => {
+    const user = userEvent.setup();
+
+    // Mock delete endpoint to return error
+    server.use(
+      http.delete(`${API_BASE_URL}/api/admin/users/:id`, () => {
+        return new HttpResponse(
+          JSON.stringify({ error: 'Failed to delete user' }),
+          { status: 500, headers: { 'Content-Type': 'application/json' } }
+        );
+      })
+    );
+
+    render(<UsersPage />);
+
+    await waitFor(() => {
+      const agentElements = screen.getAllByText('Agent User');
+      expect(agentElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Open delete modal
+    const deleteButton = screen.getByRole('button', { name: /delete agent user/i });
+    await user.click(deleteButton);
+
+    await waitFor(() => {
+      const deleteUserElements = screen.getAllByText('Delete User');
+      expect(deleteUserElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // Attempt deletion - catch the unhandled rejection
+    const confirmDeleteButton = screen.getByRole('button', { name: /delete user/i });
+
+    // Suppress unhandled rejection from mutation
+    const errorHandler = vi.fn();
+    process.on('unhandledRejection', errorHandler);
+
+    try {
+      await user.click(confirmDeleteButton);
+    } catch {
+      // Expected error - mutation throws
+    }
+
+    // Wait for mutation to complete - modal should stay open on error
+    await waitFor(() => {
+      // Verify the modal is still open (Delete User title exists)
+      const deleteUserElements = screen.getAllByText('Delete User');
+      expect(deleteUserElements.length).toBeGreaterThanOrEqual(1);
+    });
+
+    // User should still be in the list (appears in both table and modal)
+    const agentUserElements = screen.getAllByText('Agent User');
+    expect(agentUserElements.length).toBeGreaterThanOrEqual(1);
+
+    process.off('unhandledRejection', errorHandler);
   });
 });

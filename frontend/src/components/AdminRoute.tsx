@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { Role } from '@/lib/role';
 
 interface AdminRouteProps {
   children: ReactNode;
@@ -24,7 +25,7 @@ export function AdminRoute({ children }: AdminRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
-  if (user?.role !== 'ADMIN') {
+  if (user?.role !== Role.ADMIN) {
     return <Navigate to="/access-denied" replace />;
   }
 

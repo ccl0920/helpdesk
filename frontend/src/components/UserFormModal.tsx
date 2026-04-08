@@ -14,13 +14,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Role } from '@/lib/role';
 import type { User } from '@/lib/api';
 
 const userFormSchema = z.object({
   name: z.string().trim().min(3, 'Name must be at least 3 characters'),
   email: z.string().email('Invalid email format'),
   password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
-  role: z.enum(['AGENT', 'ADMIN'], { message: 'Role must be AGENT or ADMIN' }),
+  role: z.enum([Role.AGENT, Role.ADMIN], { message: 'Role must be AGENT or ADMIN' }),
 });
 
 type UserFormData = z.infer<typeof userFormSchema>;
@@ -50,7 +51,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
       name: '',
       email: '',
       password: '',
-      role: 'AGENT',
+      role: Role.AGENT,
     },
   });
 
@@ -71,7 +72,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
           name: '',
           email: '',
           password: '',
-          role: 'AGENT',
+          role: Role.AGENT,
         });
       }
       setGeneralError(null);
@@ -174,14 +175,14 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
               <Label htmlFor="role">Role</Label>
               <Select
                 value={roleValue}
-                onValueChange={(value) => value && setValue('role', value as 'AGENT' | 'ADMIN')}
+                onValueChange={(value) => value && setValue('role', value as Role)}
               >
                 <SelectTrigger className={errors.role ? 'border-destructive ring-3 ring-destructive/20' : ''}>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AGENT">Agent</SelectItem>
-                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value={Role.AGENT}>Agent</SelectItem>
+                  <SelectItem value={Role.ADMIN}>Admin</SelectItem>
                 </SelectContent>
               </Select>
               {errors.role && (

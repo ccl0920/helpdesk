@@ -1,12 +1,13 @@
 import { createContext, ReactNode, useCallback, useEffect, useState } from 'react';
 import { API_BASE_URL } from '@/lib/config';
+import { Role } from '@/lib/role';
 
 interface User {
   id: string;
   email: string;
   name: string | null;
   image: string | null;
-  role: 'AGENT' | 'ADMIN';
+  role: Role;
 }
 
 interface Session {
@@ -108,7 +109,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     user: session?.user ?? null,
     session,
     isAuthenticated: !!session,
-    isAdmin: session?.user?.role === 'ADMIN',
+    isAdmin: session?.user?.role === Role.ADMIN,
     isLoading,
     login,
     logout,
