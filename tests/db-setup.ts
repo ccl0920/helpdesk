@@ -3,9 +3,9 @@ import { config } from 'dotenv';
 import { resolve } from 'path';
 
 /**
- * Load environment variables from .env.test
+ * Load environment variables from .env.test in backend directory
  */
-config({ path: resolve(__dirname, '../.env.test') });
+config({ path: resolve(__dirname, '../backend/.env.test') });
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 
