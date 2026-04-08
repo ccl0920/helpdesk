@@ -1,10 +1,10 @@
 import { Router, Request } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
+import { validateRequest } from '../middleware/validate.js';
 import prisma, { Role } from '../lib/prisma.js';
 import { auth } from '../auth.js';
 import bcrypt from 'bcrypt';
-import { z } from 'zod';
-import { createUserSchema } from '@helpdesk/common';
+import { createUserSchema, updateUserSchema, updateRoleSchema } from '@helpdesk/common';
 
 const router = Router();
 
@@ -12,32 +12,13 @@ const router = Router();
 router.use(requireAdmin);
 
 /**
- * Zod schema for updating a user
- */
-const updateUserSchema = z.object({
-  name: z.string().trim().min(3, 'Name must be at least 3 characters'),
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(8, 'Password must be at least 8 characters').optional().or(z.literal('')),
-  role: z.enum(['AGENT', 'ADMIN'], { message: 'Role must be AGENT or ADMIN' }),
-});
-
-/**
  * PUT /api/admin/users/:id
  * Update a user (admin only)
  */
-router.put('/users/:id', async (req, res) => {
+router.put('/users/:id', validateRequest(updateUserSchema), async (req, res) => {
   try {
-    const { id } = req.params;
-
-    // Validate request body with Zod
-    const validationResult = updateUserSchema.safeParse(req.body);
-
-    if (!validationResult.success) {
-      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid request data';
-      return res.status(400).json({ error: errorMessage });
-    }
-
-    const { name, email, password, role } = validationResult.data;
+    const { id } = req.params as { id: string };
+    const { name, email, password, role } = req.body as { name: string; email: string; password?: string; role: Role };
 
     // Check if user exists and is not deleted
     const existingUser = await prisma.user.findUnique({
@@ -109,17 +90,9 @@ router.put('/users/:id', async (req, res) => {
  * POST /api/admin/users
  * Create a new user (admin only)
  */
-router.post('/users', async (req, res) => {
+router.post('/users', validateRequest(createUserSchema), async (req, res) => {
   try {
-    // Validate request body with Zod schema from common package
-    const validationResult = createUserSchema.safeParse(req.body);
-
-    if (!validationResult.success) {
-      const errorMessage = validationResult.error.issues[0]?.message || 'Invalid request data';
-      return res.status(400).json({ error: errorMessage });
-    }
-
-    const { name, email, password, role } = validationResult.data;
+    const { name, email, password, role } = req.body as { name: string; email: string; password: string; role: Role };
 
     // Check if email already exists
     const existingUser = await prisma.user.findUnique({
@@ -204,14 +177,10 @@ router.get('/users', async (req, res) => {
  * PUT /api/admin/users/:id/role
  * Update user role (admin only)
  */
-router.put('/users/:id/role', async (req, res) => {
+router.put('/users/:id/role', validateRequest(updateRoleSchema), async (req, res) => {
   try {
-    const { id } = req.params;
-    const { role } = req.body;
-
-    if (!role || !['AGENT', 'ADMIN'].includes(role)) {
-      return res.status(400).json({ error: 'Invalid role. Must be AGENT or ADMIN' });
-    }
+    const { id } = req.params as { id: string };
+    const { role } = req.body as { role: Role };
 
     const user = await prisma.user.update({
       where: { id },
