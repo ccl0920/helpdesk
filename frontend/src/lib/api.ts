@@ -2,6 +2,7 @@ import axios from 'axios';
 import { API_BASE_URL } from './config';
 
 import { Role } from './role';
+import { TicketStatus, TicketCategory } from '@helpdesk/common';
 
 /**
  * User interface matching backend Prisma schema
@@ -33,6 +34,64 @@ export interface UpdateUserInput {
   email: string;
   password?: string;
   role: Role;
+}
+
+/**
+ * Ticket message interface
+ */
+export interface TicketMessage {
+  id: string;
+  from: string;
+  to: string;
+  subject: string;
+  body: string;
+  bodyHtml: string | null;
+  createdAt: string;
+}
+
+/**
+ * Ticket interface matching backend Prisma schema
+ */
+export interface Ticket {
+  id: bigint;
+  subject: string;
+  description: string;
+  status: TicketStatus;
+  category: TicketCategory | null;
+  emailFrom: string;
+  senderName: string;
+  emailTo: string;
+  assignedToId: string | null;
+  assignedTo: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
+  messages: TicketMessage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Paginated tickets response
+ */
+export interface PaginatedTickets {
+  tickets: Ticket[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Query parameters for listing tickets
+ */
+export interface TicketQueryParams {
+  page?: number;
+  limit?: number;
+  status?: TicketStatus;
+  category?: TicketCategory;
+  assignedToId?: string | null;
 }
 
 // Axios instance with default config
@@ -95,4 +154,20 @@ export async function deleteUser(id: string): Promise<{ message: string }> {
     }
     throw error;
   }
+}
+
+/**
+ * Fetch tickets with pagination and filtering
+ */
+export async function fetchTickets(params: TicketQueryParams = {}): Promise<PaginatedTickets> {
+  const response = await api.get<PaginatedTickets>('/api/tickets', { params });
+  return response.data;
+}
+
+/**
+ * Fetch a single ticket by ID
+ */
+export async function fetchTicketById(id: string): Promise<Ticket> {
+  const response = await api.get<Ticket>(`/api/tickets/${id}`);
+  return response.data;
 }

@@ -24,6 +24,11 @@ export function NavBar({ showAuth = true }: NavBarProps) {
           </Link>
           {showAuth && (
             <div className="flex items-center gap-4">
+              {isAuthenticated && (
+                <Link to="/tickets">
+                  <Button variant="outline">Tickets</Button>
+                </Link>
+              )}
               {isAuthenticated && isAdmin && (
                 <Link to="/users">
                   <Button variant="outline">Users</Button>
