@@ -6,11 +6,19 @@ import { TicketsTable } from '@/components/TicketsTable';
 
 export function TicketsPage() {
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const limit = 20;
 
+  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+    setSortBy(newSortBy);
+    setSortOrder(newSortOrder);
+    setPage(1); // Reset to first page when sorting changes
+  };
+
   const { data, isLoading, error } = useQuery({
-    queryKey: ['tickets', page, limit],
-    queryFn: () => fetchTickets({ page, limit }),
+    queryKey: ['tickets', page, limit, sortBy, sortOrder],
+    queryFn: () => fetchTickets({ page, limit, sortBy, sortOrder }),
   });
 
   if (error) {
@@ -34,6 +42,9 @@ export function TicketsPage() {
           isLoading={isLoading}
           page={page}
           onPageChange={setPage}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+          onSortChange={handleSortChange}
         />
       </CardContent>
     </Card>

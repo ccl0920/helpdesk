@@ -59,6 +59,12 @@ const mockPaginatedTickets: PaginatedTickets = {
   totalPages: 1,
 };
 
+const defaultTableProps = {
+  sortBy: 'createdAt',
+  sortOrder: 'desc' as const,
+  onSortChange: vi.fn(),
+};
+
 describe('TicketsTable', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -72,20 +78,52 @@ describe('TicketsTable', () => {
           isLoading={true}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
-      // Should show 5 skeleton rows
+      // Should show skeleton rows (header + 5 loading rows)
       const skeletons = screen.getAllByRole('row');
       expect(skeletons.length).toBe(6); // 1 header + 5 skeleton rows
+    });
 
-      // Header should contain the column titles
-      expect(screen.getByText('ID')).toBeInTheDocument();
-      expect(screen.getByText('Subject')).toBeInTheDocument();
-      expect(screen.getByText('From')).toBeInTheDocument();
-      expect(screen.getByText('Status')).toBeInTheDocument();
-      expect(screen.getByText('Category')).toBeInTheDocument();
-      expect(screen.getByText('Created')).toBeInTheDocument();
+    it('shows skeleton in all cells during loading', () => {
+      render(
+        <TicketsTable
+          data={undefined}
+          isLoading={true}
+          page={1}
+          onPageChange={vi.fn()}
+          {...defaultTableProps}
+        />
+      );
+
+      const table = screen.getByRole('table');
+      const cells = within(table).getAllByRole('cell');
+      // 5 rows x 6 columns = 30 cells, each with a skeleton
+      expect(cells.length).toBe(30);
+    });
+
+    it('shows skeleton in header cells during loading', () => {
+      render(
+        <TicketsTable
+          data={undefined}
+          isLoading={true}
+          page={1}
+          onPageChange={vi.fn()}
+          {...defaultTableProps}
+        />
+      );
+
+      const table = screen.getByRole('table');
+      const headerRow = within(table).getAllByRole('row')[0];
+      const headers = within(headerRow).getAllByRole('columnheader');
+      expect(headers.length).toBe(6);
+
+      // Each header should contain a skeleton
+      headers.forEach((header) => {
+        expect(header.querySelector('[data-slot="skeleton"]')).toBeInTheDocument();
+      });
     });
   });
 
@@ -97,6 +135,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -113,6 +152,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -128,11 +168,32 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
       expect(screen.getByText('John Doe')).toBeInTheDocument();
       expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+    });
+
+    it('displays both sender name and email when senderName is available', () => {
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          {...defaultTableProps}
+        />
+      );
+
+      // First ticket should show both name and email
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+
+      // Second ticket should show both name and email
+      expect(screen.getByText('Jane Smith')).toBeInTheDocument();
+      expect(screen.getByText('jane@example.com')).toBeInTheDocument();
     });
 
     it('falls back to email when senderName is null', () => {
@@ -142,11 +203,44 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
       // Third ticket has null senderName, should show email
       expect(screen.getByText('alice@example.com')).toBeInTheDocument();
+    });
+
+    it('does not display sender name when senderName is null', () => {
+      const ticketsWithNullSender: PaginatedTickets = {
+        tickets: [
+          createMockTicket({
+            id: BigInt(1),
+            senderName: null,
+            emailFrom: 'noname@example.com',
+          }),
+        ],
+        total: 1,
+        page: 1,
+        limit: 20,
+        totalPages: 1,
+      };
+
+      render(
+        <TicketsTable
+          data={ticketsWithNullSender}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          {...defaultTableProps}
+        />
+      );
+
+      // Should show email
+      expect(screen.getByText('noname@example.com')).toBeInTheDocument();
+      // Should not show any name (only the email should be present in the From column)
+      const fromCells = screen.getAllByText('noname@example.com');
+      expect(fromCells.length).toBe(1);
     });
 
     it('displays all status types correctly', () => {
@@ -156,6 +250,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -171,6 +266,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -191,6 +287,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -206,6 +303,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -232,6 +330,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -253,6 +352,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -278,6 +378,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -302,6 +403,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -324,6 +426,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={3}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -348,6 +451,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={onPageChange}
+          {...defaultTableProps}
         />
       );
 
@@ -374,6 +478,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={2}
           onPageChange={onPageChange}
+          {...defaultTableProps}
         />
       );
 
@@ -398,6 +503,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={2}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -419,6 +525,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -436,6 +543,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -459,6 +567,7 @@ describe('TicketsTable', () => {
           isLoading={false}
           page={1}
           onPageChange={vi.fn()}
+          {...defaultTableProps}
         />
       );
 
@@ -466,6 +575,208 @@ describe('TicketsTable', () => {
       const rows = within(table).getAllByRole('row');
       // 1 header row + 3 data rows
       expect(rows.length).toBe(4);
+    });
+  });
+
+  describe('Sorting', () => {
+    it('renders column headers as clickable buttons', () => {
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          {...defaultTableProps}
+        />
+      );
+
+      // All column headers should be buttons
+      const columnButtons = screen.getAllByRole('button');
+      expect(columnButtons.length).toBe(6);
+
+      // Verify each button has the correct label
+      expect(screen.getByRole('button', { name: /id/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /subject/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /from/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /category/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /created/i })).toBeInTheDocument();
+    });
+
+    it('displays ArrowUpDown icon for unsorted columns', () => {
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={vi.fn()}
+        />
+      );
+
+      // Subject column should have ArrowUpDown (not currently sorted)
+      const subjectButton = screen.getByRole('button', { name: /subject/i });
+      // The unsorted column should have the ArrowUpDown icon
+      expect(subjectButton).toBeInTheDocument();
+    });
+
+    it('displays ArrowDown icon for currently sorted column (desc)', () => {
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={vi.fn()}
+        />
+      );
+
+      // Created column should have ArrowDown icon
+      const createdButton = screen.getByRole('button', { name: /created/i });
+      expect(createdButton).toBeInTheDocument();
+    });
+
+    it('displays ArrowUp icon for currently sorted column (asc)', () => {
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="subject"
+          sortOrder="asc"
+          onSortChange={vi.fn()}
+        />
+      );
+
+      // Subject column should have ArrowUp icon
+      const subjectButton = screen.getByRole('button', { name: /subject/i });
+      expect(subjectButton).toBeInTheDocument();
+    });
+
+    it('calls onSortChange with desc when clicking an unsorted column', async () => {
+      const user = userEvent.setup();
+      const handleSortChange = vi.fn();
+
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={handleSortChange}
+        />
+      );
+
+      // Click the Subject column header
+      const subjectButton = screen.getByRole('button', { name: /subject/i });
+      await user.click(subjectButton);
+
+      expect(handleSortChange).toHaveBeenCalledWith('subject', 'desc');
+    });
+
+    it('toggles sort order to desc when clicking the same column that is sorted asc', async () => {
+      const user = userEvent.setup();
+      const handleSortChange = vi.fn();
+
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="subject"
+          sortOrder="asc"
+          onSortChange={handleSortChange}
+        />
+      );
+
+      // Click the Subject column header (currently sorted asc)
+      const subjectButton = screen.getByRole('button', { name: /subject/i });
+      await user.click(subjectButton);
+
+      expect(handleSortChange).toHaveBeenCalledWith('subject', 'desc');
+    });
+
+    it('toggles sort order to asc when clicking the same column that is sorted desc', async () => {
+      const user = userEvent.setup();
+      const handleSortChange = vi.fn();
+
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={handleSortChange}
+        />
+      );
+
+      // Click the Created column header (currently sorted desc)
+      const createdButton = screen.getByRole('button', { name: /created/i });
+      await user.click(createdButton);
+
+      expect(handleSortChange).toHaveBeenCalledWith('createdAt', 'asc');
+    });
+
+    it('calls onSortChange for each sortable column', async () => {
+      const user = userEvent.setup();
+      const handleSortChange = vi.fn();
+
+      render(
+        <TicketsTable
+          data={mockPaginatedTickets}
+          isLoading={false}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={handleSortChange}
+        />
+      );
+
+      // Click ID column
+      await user.click(screen.getByRole('button', { name: /id/i }));
+      expect(handleSortChange).toHaveBeenLastCalledWith('id', 'desc');
+
+      // Click From column
+      await user.click(screen.getByRole('button', { name: /from/i }));
+      expect(handleSortChange).toHaveBeenLastCalledWith('emailFrom', 'desc');
+
+      // Click Status column
+      await user.click(screen.getByRole('button', { name: /status/i }));
+      expect(handleSortChange).toHaveBeenLastCalledWith('status', 'desc');
+
+      // Click Category column
+      await user.click(screen.getByRole('button', { name: /category/i }));
+      expect(handleSortChange).toHaveBeenLastCalledWith('category', 'desc');
+    });
+
+    it('does not call onSortChange during loading state', () => {
+      const handleSortChange = vi.fn();
+
+      render(
+        <TicketsTable
+          data={undefined}
+          isLoading={true}
+          page={1}
+          onPageChange={vi.fn()}
+          sortBy="createdAt"
+          sortOrder="desc"
+          onSortChange={handleSortChange}
+        />
+      );
+
+      // During loading, no buttons should trigger sort
+      expect(handleSortChange).not.toHaveBeenCalled();
     });
   });
 });

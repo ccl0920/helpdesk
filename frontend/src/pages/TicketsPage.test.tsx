@@ -1,5 +1,6 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { render } from '../test/test-utils';
@@ -99,6 +100,9 @@ const mockTicketsPage2: PaginatedTickets = {
   totalPages: 2,
 };
 
+// Track API calls for assertion
+let mockFetchTickets: ReturnType<typeof vi.fn>;
+
 // Setup MSW server
 const server = setupServer(
   http.get(`${API_BASE_URL}/api/auth/get-session`, () => {
@@ -107,6 +111,13 @@ const server = setupServer(
   http.get(`${API_BASE_URL}/api/tickets`, ({ request }) => {
     const url = new URL(request.url, 'http://localhost');
     const page = parseInt(url.searchParams.get('page') || '1');
+    const sortBy = url.searchParams.get('sortBy') || 'createdAt';
+    const sortOrder = url.searchParams.get('sortOrder') || 'desc';
+
+    // Track the call
+    if (mockFetchTickets) {
+      mockFetchTickets({ page, sortBy, sortOrder });
+    }
 
     if (page === 2) {
       return HttpResponse.json(mockTicketsPage2);
@@ -121,6 +132,7 @@ afterAll(() => server.close());
 
 describe('TicketsPage', () => {
   beforeEach(() => {
+    mockFetchTickets = vi.fn();
     vi.clearAllMocks();
   });
 
@@ -216,9 +228,23 @@ describe('TicketsPage', () => {
     render(<TicketsPage />);
 
     await waitFor(() => {
+      // Tickets with senderName should show both name and email
       expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('user1@example.com')).toBeInTheDocument();
       expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-      // Third ticket has null senderName, should show email
+      expect(screen.getByText('user2@example.com')).toBeInTheDocument();
+      // Third ticket has null senderName, should show email only
+      expect(screen.getByText('user3@example.com')).toBeInTheDocument();
+    });
+  });
+
+  it('displays email address for all tickets including those with senderName', async () => {
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      // All tickets should display their email address
+      expect(screen.getByText('user1@example.com')).toBeInTheDocument();
+      expect(screen.getByText('user2@example.com')).toBeInTheDocument();
       expect(screen.getByText('user3@example.com')).toBeInTheDocument();
     });
   });
@@ -320,6 +346,158 @@ describe('TicketsPage - Empty State', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No tickets found')).toBeInTheDocument();
+    });
+  });
+});
+
+describe('TicketsPage - Sorting', () => {
+  beforeEach(() => {
+    mockFetchTickets = vi.fn();
+    vi.clearAllMocks();
+  });
+
+  it('includes default sort params in API call', async () => {
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    // Verify initial API call includes default sort (createdAt desc)
+    expect(mockFetchTickets).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'createdAt', sortOrder: 'desc' })
+    );
+  });
+
+  it('updates sort params when clicking a column header', async () => {
+    const user = userEvent.setup();
+    render(<TicketsPage />);
+
+    // Wait for data to load
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    // Clear previous calls
+    mockFetchTickets.mockClear();
+
+    // Click the Subject column header to sort
+    const subjectButton = screen.getByRole('button', { name: /subject/i });
+    await user.click(subjectButton);
+
+    // Wait for new data to load with new sort
+    await waitFor(() => {
+      expect(mockFetchTickets).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'subject', sortOrder: 'desc', page: 1 })
+      );
+    });
+  });
+
+  it('updates sort direction when clicking a column header', async () => {
+    const user = userEvent.setup();
+
+    render(<TicketsPage />);
+
+    // Wait for initial load with default sort
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    // Clear mock
+    mockFetchTickets.mockClear();
+
+    // Click Subject column to sort by subject
+    const subjectButton = screen.getByRole('button', { name: /subject/i });
+    await user.click(subjectButton);
+
+    // Wait for API call with subject desc (default for new column)
+    await waitFor(() => {
+      expect(mockFetchTickets).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'subject', sortOrder: 'desc' })
+      );
+    });
+  });
+
+  it('resets page to 1 when sort changes', async () => {
+    const user = userEvent.setup();
+
+    // Setup multi-page data
+    server.use(
+      http.get(`${API_BASE_URL}/api/tickets`, ({ request }) => {
+        const url = new URL(request.url, 'http://localhost');
+        const page = parseInt(url.searchParams.get('page') || '1');
+        const sortBy = url.searchParams.get('sortBy') || 'createdAt';
+        const sortOrder = url.searchParams.get('sortOrder') || 'desc';
+
+        if (mockFetchTickets) {
+          mockFetchTickets({ page, sortBy, sortOrder });
+        }
+
+        if (page === 2) {
+          return HttpResponse.json(mockTicketsPage2);
+        }
+        return HttpResponse.json(mockTicketsMultiPage);
+      })
+    );
+
+    render(<TicketsPage />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    mockFetchTickets.mockClear();
+
+    // Click a column header to change sort
+    const subjectButton = screen.getByRole('button', { name: /subject/i });
+    await user.click(subjectButton);
+
+    // Verify API call includes page 1
+    await waitFor(() => {
+      expect(mockFetchTickets).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, sortBy: 'subject', sortOrder: 'desc' })
+      );
+    });
+  });
+
+  it('renders column headers as buttons in the table', async () => {
+    render(<TicketsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    // All column headers should be buttons
+    expect(screen.getByRole('button', { name: /id/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /subject/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /from/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /status/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /category/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /created/i })).toBeInTheDocument();
+  });
+
+  it('shows sorted data after sorting', async () => {
+    const user = userEvent.setup();
+
+    render(<TicketsPage />);
+
+    // Wait for initial load
+    await waitFor(() => {
+      expect(screen.getByText('Cannot login to my account')).toBeInTheDocument();
+    });
+
+    mockFetchTickets.mockClear();
+
+    // Click the Subject column
+    const subjectButton = screen.getByRole('button', { name: /subject/i });
+    await user.click(subjectButton);
+
+    // Verify the sort params were sent
+    await waitFor(() => {
+      expect(mockFetchTickets).toHaveBeenCalledWith(
+        expect.objectContaining({ sortBy: 'subject', sortOrder: 'desc' })
+      );
     });
   });
 });

@@ -133,6 +133,13 @@ export async function getTicketById(id: string): Promise<TicketWithDetails | nul
 }
 
 /**
+ * Valid columns that can be sorted
+ */
+export const VALID_SORT_COLUMNS = ['id', 'subject', 'emailFrom', 'status', 'category', 'createdAt'] as const;
+export type SortColumn = typeof VALID_SORT_COLUMNS[number];
+export type SortOrder = 'asc' | 'desc';
+
+/**
  * List tickets with pagination and filtering
  */
 export async function listTickets(options: {
@@ -141,6 +148,8 @@ export async function listTickets(options: {
   status?: TicketStatus;
   category?: TicketCategory;
   assignedToId?: string | null;
+  sortBy?: SortColumn;
+  sortOrder?: SortOrder;
 } = {}): Promise<PaginatedTickets> {
   const {
     page = 1,
@@ -148,6 +157,8 @@ export async function listTickets(options: {
     status,
     category,
     assignedToId,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
   } = options;
 
   const skip = (page - 1) * limit;
@@ -162,12 +173,20 @@ export async function listTickets(options: {
   // Get total count
   const total = await prisma.ticket.count({ where });
 
+  // Build orderBy clause
+  const orderBy: Record<string, any> = {};
+  if (VALID_SORT_COLUMNS.includes(sortBy)) {
+    orderBy[sortBy] = sortOrder;
+  } else {
+    orderBy.createdAt = 'desc';
+  }
+
   // Get tickets
   const tickets = await prisma.ticket.findMany({
     where,
     skip,
     take: limit,
-    orderBy: { createdAt: 'desc' },
+    orderBy,
     include: {
       assignedTo: {
         select: {

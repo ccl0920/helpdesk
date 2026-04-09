@@ -92,6 +92,8 @@ export interface TicketQueryParams {
   status?: TicketStatus;
   category?: TicketCategory;
   assignedToId?: string | null;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 // Axios instance with default config

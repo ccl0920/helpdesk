@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 import { requireAuth } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import {
@@ -17,10 +18,26 @@ import {
   updateTicket,
   addMessage,
   type TicketWithDetails,
+  VALID_SORT_COLUMNS,
+  type SortColumn,
+  type SortOrder,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
 
 const router = Router();
+
+/**
+ * Zod schema for listing tickets query parameters
+ */
+const listTicketsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  status: z.nativeEnum(TicketStatus).optional(),
+  category: z.nativeEnum(TicketCategory).optional(),
+  assignedToId: z.string().optional().nullable(),
+  sortBy: z.enum(VALID_SORT_COLUMNS).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
 
 /**
  * POST /api/email/webhook
@@ -34,33 +51,44 @@ router.post('/email/webhook', async (req: Request, res: Response) => {
 /**
  * GET /api/tickets
  * List all tickets with pagination and filtering
- * Query params: page, limit, status, category, assignedToId
+ * Query params: page, limit, status, category, assignedToId, sortBy, sortOrder
  */
-router.get('/tickets', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-    const status = req.query.status as TicketStatus | undefined;
-    const category = req.query.category as TicketCategory | undefined;
-    const assignedToId = req.query.assignedToId as string | undefined;
+router.get(
+  '/tickets',
+  requireAuth,
+  validateRequest(listTicketsQuerySchema, 'query'),
+  async (req: Request, res: Response) => {
+    try {
+      const {
+        page,
+        limit,
+        status,
+        category,
+        assignedToId,
+        sortBy,
+        sortOrder,
+      } = (req as any).validatedQuery as z.infer<typeof listTicketsQuerySchema>;
 
-    const result = await listTickets({
-      page,
-      limit,
-      status,
-      category,
-      assignedToId: assignedToId === 'null' ? null : assignedToId,
-    });
+      const result = await listTickets({
+        page,
+        limit,
+        status,
+        category,
+        assignedToId: assignedToId === 'null' ? null : assignedToId,
+        sortBy,
+        sortOrder,
+      });
 
-    res.json(result);
-  } catch (error) {
-    console.error('Error listing tickets:', error);
-    res.status(500).json({
-      error: 'Failed to list tickets',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+      res.json(result);
+    } catch (error) {
+      console.error('Error listing tickets:', error);
+      res.status(500).json({
+        error: 'Failed to list tickets',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
-});
+);
 
 /**
  * GET /api/tickets/:id

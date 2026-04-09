@@ -12,11 +12,12 @@
     "test:run": "vitest run"
   },
   "dependencies": {
-    "@helpdesk/common": "*",
     "@base-ui/react": "^1.3.0",
     "@fontsource-variable/geist": "^5.2.8",
+    "@helpdesk/common": "*",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-query": "^5.96.1",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.14.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

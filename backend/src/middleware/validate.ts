@@ -20,7 +20,16 @@ export function validateRequest(
     }
 
     // Replace request data with validated data (includes type coercion)
-    req[location] = validationResult.data;
+    // Note: req.query is read-only in Express, so we attach validated query separately
+    if (location === 'query') {
+      Object.defineProperty(req, 'validatedQuery', {
+        value: validationResult.data,
+        writable: true,
+        configurable: true,
+      });
+    } else {
+      req[location] = validationResult.data;
+    }
     next();
   };
 }
