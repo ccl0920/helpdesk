@@ -12,3 +12,22 @@ export {
   type UpdateUserInput,
   type UpdateRoleInput,
 } from './schemas/user';
+
+export {
+  TicketStatus,
+  TicketCategory,
+  ticketSubjectField,
+  ticketDescriptionField,
+  ticketEmailField,
+  ticketSenderNameField,
+  ticketStatusField,
+  ticketCategoryField,
+  createTicketSchema,
+  createTicketFromEmailSchema,
+  updateTicketSchema,
+  createMessageSchema,
+  type CreateTicketInput,
+  type CreateTicketFromEmailInput,
+  type UpdateTicketInput,
+  type CreateMessageInput,
+} from './schemas/ticket';

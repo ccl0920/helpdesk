@@ -16,6 +16,18 @@ enum Role {
   ADMIN
 }
 
+enum TicketStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  GENERAL_QUESTION
+  TECHNICAL_QUESTION
+  REFUND_REQUEST
+}
+
 // Better Auth models
 
 model User {
@@ -30,6 +42,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  assignedTickets Ticket[] @relation("AssignedTickets")
 
   @@map("user")
 }
@@ -82,4 +95,45 @@ model Verification {
   @@unique([identifier, value])
   @@index([identifier])
   @@map("verification")
+}
+
+// Ticket models
+
+model Ticket {
+  id          BigInt          @id @default(autoincrement())
+  subject     String
+  description String          @db.Text
+  status      TicketStatus    @default(OPEN)
+  category    TicketCategory?
+  emailFrom   String
+  senderName  String
+  emailTo     String
+  assignedTo  User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  messages    TicketMessage[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([emailFrom])
+  @@index([createdAt(sort: Desc)])
+  @@map("ticket")
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  BigInt
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  from      String
+  to        String
+  subject   String
+  body      String   @db.Text
+  bodyHtml  String?  @db.Text
+  headers   Json?
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([createdAt(sort: Desc)])
+  @@map("ticket_message")
 }

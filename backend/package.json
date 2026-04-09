@@ -24,6 +24,9 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.3.2",
     "helmet": "^8.1.0",
+    "imap": "^0.8.19",
+    "mailparser": "^3.9.7",
+    "nodemailer": "^8.0.5",
     "pg": "^8.20.0",
     "prisma": "^7.5.0",
     "zod": "^4.3.6"
@@ -34,6 +37,8 @@
     "@types/cookie-parser": "^1.4.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
+    "@types/imap": "^0.8.43",
+    "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.15.2",
     "typescript": "^5.9.3"
   }

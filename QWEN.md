@@ -730,3 +730,288 @@ it('renders table with correct data', async () => {
   });
 });
 ```
+
+## Ticket System & Email Integration
+
+### Overview
+The system automatically receives emails at a support address and converts them into tickets. It supports **two email ingestion methods** through a unified interface:
+
+1. **IMAP Polling** — Periodically checks an IMAP mailbox for new emails
+2. **Webhook** — Accepts HTTP POST from email providers (Mailgun, SendGrid, SES, etc.)
+
+Both methods use the same core ingestion logic, ensuring consistent ticket creation and reply threading.
+
+### Database Models
+
+#### Ticket Model
+```prisma
+enum TicketStatus {
+  OPEN
+  RESOLVED
+  CLOSED
+}
+
+enum TicketCategory {
+  GENERAL_QUESTION
+  TECHNICAL_QUESTION
+  REFUND_REQUEST
+}
+
+model Ticket {
+  id          BigInt          @id @default(autoincrement())
+  subject     String
+  description String          @db.Text
+  status      TicketStatus    @default(OPEN)
+  category    TicketCategory?
+  emailFrom   String
+  senderName  String
+  emailTo     String
+  assignedTo  User?           @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  assignedToId String?
+  messages    TicketMessage[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([emailFrom])
+  @@index([createdAt(sort: Desc)])
+}
+```
+
+**Key Fields:**
+- `id` — Auto-incrementing BigInt for human-readable ticket numbers (e.g., #1, #2, #3)
+- `senderName` — **Required** display name of the email sender (extracted from email headers)
+- `emailFrom` — Sender email address
+- `description` — Original email body (plain text)
+
+#### TicketMessage Model
+Stores individual emails in the ticket thread:
+```prisma
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  BigInt
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  from      String
+  to        String
+  subject   String
+  body      String   @db.Text
+  bodyHtml  String?  @db.Text
+  headers   Json?
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([createdAt(sort: Desc)])
+}
+```
+
+**Key Fields:**
+- `body` — **Required** plain text version of the email/message content
+- `bodyHtml` — **Optional** rich HTML version of the email (for rendering in email viewers)
+- `headers` — **Optional** JSON object storing email threading metadata:
+  ```json
+  {
+    "messageId": "<CABc123xyz@mail.gmail.com>",
+    "inReplyTo": "<CADef456abc@mail.gmail.com>",
+    "references": ["<CABc123xyz@mail.gmail.com>", "<CADef456abc@mail.gmail.com>"]
+  }
+  ```
+  Used for:
+  - **Reply threading** — Links replies to the correct ticket via `In-Reply-To` and `References`
+  - **Deduplication** — Prevents processing the same email twice via `Message-ID`
+  - **Email forensics** — Preserves original email metadata
+
+### Email Ingestion Architecture
+
+```
+Email Provider (IMAP/Webhook)
+         ↓
+  Email Parser (nodemailer/mailparser)
+         ↓
+  Email Ingestor (processIncomingEmail)
+         ↓
+  Ticket Service (create/append)
+         ↓
+  Database (Prisma)
+```
+
+**Key Files:**
+
+| File | Purpose |
+|------|---------|
+| `backend/src/services/emailIngestor.ts` | Core ingestion logic (parse → deduplicate → create/append) |
+| `backend/src/services/ticketService.ts` | Ticket CRUD operations |
+| `backend/src/services/emailProviders/imapProvider.ts` | IMAP polling implementation |
+| `backend/src/services/emailProviders/webhookProvider.ts` | Webhook endpoint handler |
+| `backend/src/lib/emailParser.ts` | Raw email → structured data |
+| `backend/src/routes/tickets.ts` | Ticket API endpoints |
+
+### Configuration
+
+Add to `.env`:
+
+```env
+# Email Provider Selection
+# Options: "imap", "webhook", "both", "none" (default: "none")
+EMAIL_PROVIDER=imap
+
+# IMAP Configuration (for polling)
+IMAP_HOST=imap.gmail.com
+IMAP_PORT=993
+IMAP_USER=support@yourdomain.com
+IMAP_PASSWORD=your_app_password
+IMAP_TLS=true
+IMAP_MAILBOX=INBOX
+EMAIL_POLLING_INTERVAL=30000  # milliseconds
+
+# Webhook Configuration (for provider callbacks)
+WEBHOOK_SECRET=your_webhook_secret  # For signature validation
+```
+
+### How It Works
+
+#### 1. Email Reception
+- **IMAP Mode**: Polls mailbox every N seconds, fetches unseen emails
+- **Webhook Mode**: Listens for POST at `/api/email/webhook`
+
+#### 2. Email Parsing
+Uses `nodemailer`'s `simpleParser` to extract:
+- From, To, Subject
+- Body (text/plain and text/html)
+- Headers (Message-ID, In-Reply-To, References)
+
+#### 3. Deduplication
+Checks `Message-ID` header against existing ticket messages to avoid processing the same email twice.
+
+#### 4. Reply Threading
+- Checks `In-Reply-To` and `References` headers
+- If match found → appends message to existing ticket
+- If no match → creates new ticket
+
+#### 5. Ticket Creation
+Creates ticket with:
+- `status: OPEN`
+- `category: null` (to be classified by AI in Phase 5)
+- Initial message from the email
+
+### API Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/tickets` | Required | List tickets (paginated, filterable) |
+| `GET` | `/api/tickets/:id` | Required | Get ticket with message thread |
+| `POST` | `/api/tickets` | Required | Create ticket manually |
+| `PUT` | `/api/tickets/:id` | Required | Update ticket (status, category, assignee) |
+| `POST` | `/api/tickets/:id/messages` | Required | Add message to ticket |
+| `POST` | `/api/email/webhook` | Signature | Webhook for email providers |
+
+#### Query Parameters for GET /api/tickets
+```
+?page=1&limit=20&status=OPEN&category=TECHNICAL_QUESTION&assignedToId=user123
+```
+
+### Using the Ticket Service
+
+```typescript
+import {
+  createTicket,
+  getTicketById,
+  listTickets,
+  updateTicket,
+  addMessage,
+} from '@/services/ticketService';
+
+// Create a ticket
+const ticket = await createTicket({
+  subject: 'Need help with login',
+  description: 'I can\'t access my account...',
+  emailFrom: 'user@example.com',
+  emailTo: 'support@helpdesk.com',
+});
+
+// Update ticket status
+await updateTicket(ticket.id, {
+  status: 'RESOLVED',
+  category: 'TECHNICAL_QUESTION',
+});
+
+// Add message to thread
+await addMessage(ticket.id, {
+  from: 'agent@helpdesk.com',
+  to: 'user@example.com',
+  subject: 'Re: Need help with login',
+  body: 'We\'ve reset your password...',
+});
+```
+
+### Supported Webhook Providers
+
+The webhook handler automatically detects payload format from:
+
+| Provider | Format | Notes |
+|----------|--------|-------|
+| **Mailgun** | Multipart or parsed JSON | Uses `body-mime` or `body-plain` fields |
+| **SendGrid** | Inbound parse webhook | Uses `from`, `to`, `subject`, `text` fields |
+| **AWS SES** | SNS notification | Requires SNS topic configuration |
+| **Generic** | Custom JSON | Provide `from`, `to`, `subject`, `body` fields |
+
+### Graceful Shutdown
+On `SIGINT` or `SIGTERM`:
+1. Stops IMAP polling
+2. Ends IMAP connection
+3. Disconnects from database
+4. Exits process
+
+### Adding New Email Providers
+
+To add a new email provider:
+
+1. Create a new file in `backend/src/services/emailProviders/`
+2. Implement the provider logic (follow IMAP or webhook pattern)
+3. Export initialization function
+4. Call it in `backend/src/index.ts` based on `EMAIL_PROVIDER` env var
+
+The unified ingestion interface (`emailIngestor.ts`) means you don't need to change core logic.
+
+### Testing Email Integration
+
+#### Testing Webhook
+```bash
+curl -X POST http://localhost:3001/api/email/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "from": "user@example.com",
+    "to": "support@helpdesk.com",
+    "subject": "Test ticket",
+    "body": "This is a test email",
+    "bodyHtml": "<p>This is a test email</p>"
+  }'
+```
+
+#### Testing with Raw MIME Email
+```bash
+curl -X POST http://localhost:3001/api/email/webhook \
+  -H "Content-Type: application/json" \
+  -d '{
+    "raw": "From: user@example.com\r\nTo: support@helpdesk.com\r\nSubject: Test\r\n\r\nTest body"
+  }'
+```
+
+### Shared Schemas
+
+Ticket validation schemas are in `@helpdesk/common`:
+
+```typescript
+import {
+  createTicketSchema,
+  updateTicketSchema,
+  createMessageSchema,
+  TicketStatus,
+  TicketCategory,
+  type CreateTicketInput,
+  type UpdateTicketInput,
+  type CreateMessageInput,
+} from '@helpdesk/common';
+```
+
+Use these in both frontend (form validation) and backend (request validation).

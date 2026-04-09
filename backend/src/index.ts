@@ -5,7 +5,16 @@ import helmet from 'helmet';
 import prisma from './lib/prisma.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
+import ticketRoutes from './routes/tickets.js';
 import { authLimiter, generalLimiter } from './middleware/rateLimiter.js';
+import { startImapPolling, stopImapPolling } from './services/emailProviders/imapProvider.js';
+import { initWebhookProvider } from './services/emailProviders/webhookProvider.js';
+
+// Add BigInt serialization support for JSON.stringify
+// This prevents "Do not know how to serialize a BigInt" errors
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -55,11 +64,44 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Initialize email services
+const emailProvider = process.env.EMAIL_PROVIDER || 'none';
+
+if (emailProvider === 'imap' || emailProvider === 'both') {
+  // Validate IMAP configuration
+  if (!process.env.IMAP_HOST || !process.env.IMAP_USER || !process.env.IMAP_PASSWORD) {
+    console.warn('⚠️  IMAP configuration incomplete. Email polling disabled.');
+  } else {
+    startImapPolling({
+      host: process.env.IMAP_HOST,
+      port: parseInt(process.env.IMAP_PORT || '993'),
+      user: process.env.IMAP_USER,
+      password: process.env.IMAP_PASSWORD,
+      tls: process.env.IMAP_TLS !== 'false',
+      mailbox: process.env.IMAP_MAILBOX || 'INBOX',
+      pollingInterval: parseInt(process.env.EMAIL_POLLING_INTERVAL || '30000'),
+    });
+  }
+}
+
+if (emailProvider === 'webhook' || emailProvider === 'both') {
+  initWebhookProvider({
+    secret: process.env.WEBHOOK_SECRET,
+  });
+}
+
+if (emailProvider === 'none') {
+  console.log('📭 Email ingestion disabled (set EMAIL_PROVIDER=imap, webhook, or both)');
+}
+
 // Auth routes with rate limiting
 app.use('/api/auth', authLimiter, authRoutes);
 
 // Admin routes (protected by requireAdmin middleware)
 app.use('/api/admin', adminRoutes);
+
+// Ticket routes (protected by requireAuth middleware)
+app.use('/api', ticketRoutes);
 
 // Health check (rate limited)
 app.get('/api/health', generalLimiter, async (req, res) => {
@@ -93,11 +135,15 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
+  console.log('🛑 Shutting down...');
+  await stopImapPolling();
   await prisma.$disconnect();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
+  console.log('🛑 Shutting down...');
+  await stopImapPolling();
   await prisma.$disconnect();
   process.exit(0);
 });
