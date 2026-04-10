@@ -18,7 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { TicketStatus, TicketCategory } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, type SortColumn, type SortOrder } from '@helpdesk/common';
 import type { PaginatedTickets, Ticket } from '@/lib/api';
 
 const STATUS_CONFIG: Record<TicketStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -38,9 +38,9 @@ interface TicketsTableProps {
   isLoading: boolean;
   page: number;
   onPageChange: (page: number) => void;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  sortBy: SortColumn;
+  sortOrder: SortOrder;
+  onSortChange: (sortBy: SortColumn, sortOrder: SortOrder) => void;
 }
 
 export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sortOrder, onSortChange }: TicketsTableProps) {

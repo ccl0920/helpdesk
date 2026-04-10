@@ -81,3 +81,27 @@ export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type CreateTicketFromEmailInput = z.infer<typeof createTicketFromEmailSchema>;
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
 export type CreateMessageInput = z.infer<typeof createMessageSchema>;
+
+/**
+ * Valid columns that can be sorted (shared between frontend and backend)
+ */
+export const VALID_SORT_COLUMNS = ['id', 'subject', 'emailFrom', 'status', 'category', 'createdAt'] as const;
+export type SortColumn = typeof VALID_SORT_COLUMNS[number];
+export type SortOrder = 'asc' | 'desc';
+
+/**
+ * Zod schema for listing tickets query parameters
+ * Used by both frontend (type inference) and backend (request validation)
+ */
+export const listTicketsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  status: z.nativeEnum(TicketStatus).optional(),
+  category: z.nativeEnum(TicketCategory).optional(),
+  assignedToId: z.string().optional().nullable(),
+  sortBy: z.enum(VALID_SORT_COLUMNS).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>;

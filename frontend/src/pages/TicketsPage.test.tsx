@@ -72,7 +72,9 @@ const mockTickets: PaginatedTickets = {
 const mockTicketsMultiPage: PaginatedTickets = {
   ...mockTickets,
   total: 25,
-  totalPages: 2,
+  page: 1,
+  limit: 10,
+  totalPages: 3,
 };
 
 // Mock tickets for page 2 in pagination testing
@@ -96,8 +98,8 @@ const mockTicketsPage2: PaginatedTickets = {
   ],
   total: 25,
   page: 2,
-  limit: 20,
-  totalPages: 2,
+  limit: 10,
+  totalPages: 3,
 };
 
 // Track API calls for assertion
@@ -279,8 +281,11 @@ describe('TicketsPage', () => {
     });
 
     // Pagination info should be visible
-    expect(screen.getByText(/Showing 1 to 20 of 25 tickets/)).toBeInTheDocument();
-    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
+    expect(screen.getByText(/Showing 1 to 10 of 25 tickets/)).toBeInTheDocument();
+    // Page number buttons should be rendered (1, 2, 3, ..., and Next)
+    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument();
   });
 });
 

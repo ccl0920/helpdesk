@@ -6,6 +6,7 @@ import {
   createTicketSchema,
   updateTicketSchema,
   createMessageSchema,
+  listTicketsQuerySchema,
   TicketStatus,
   TicketCategory,
   type UpdateTicketInput,
@@ -18,27 +19,10 @@ import {
   updateTicket,
   addMessage,
   type TicketWithDetails,
-  VALID_SORT_COLUMNS,
-  type SortColumn,
-  type SortOrder,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
 
 const router = Router();
-
-/**
- * Zod schema for listing tickets query parameters
- */
-const listTicketsQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(10),
-  search: z.string().optional(),
-  status: z.nativeEnum(TicketStatus).optional(),
-  category: z.nativeEnum(TicketCategory).optional(),
-  assignedToId: z.string().optional().nullable(),
-  sortBy: z.enum(VALID_SORT_COLUMNS).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-});
 
 /**
  * POST /api/email/webhook

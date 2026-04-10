@@ -5,6 +5,9 @@ import {
   type CreateMessageInput,
   TicketStatus,
   TicketCategory,
+  VALID_SORT_COLUMNS,
+  type SortColumn,
+  type SortOrder,
 } from '@helpdesk/common';
 
 /**
@@ -131,13 +134,6 @@ export async function getTicketById(id: string): Promise<TicketWithDetails | nul
 
   return ticket as TicketWithDetails | null;
 }
-
-/**
- * Valid columns that can be sorted
- */
-export const VALID_SORT_COLUMNS = ['id', 'subject', 'emailFrom', 'status', 'category', 'createdAt'] as const;
-export type SortColumn = typeof VALID_SORT_COLUMNS[number];
-export type SortOrder = 'asc' | 'desc';
 
 /**
  * List tickets with pagination and filtering

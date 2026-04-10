@@ -189,14 +189,24 @@ Use `Role` type in interfaces and `z.enum([Role.AGENT, Role.ADMIN])` for Zod val
 ## Shared Code (Common Package)
 
 ### Overview
-The `@helpdesk/common` package contains shared Zod schemas that are used by both frontend and backend for consistent validation.
+The `@helpdesk/common` package contains shared Zod schemas, enums, constants, and types that are used by both frontend and backend for consistent validation and type safety.
+
+### Rule: All Zod Schemas Go in `common/`
+
+**Going forward, all Zod schemas must be defined in the `common/src/schemas/` folder.** This includes:
+- Form validation schemas (create, update, etc.)
+- Query parameter validation schemas (pagination, filtering, sorting, etc.)
+- Any other Zod schemas used by frontend or backend for validation
+
+**Do NOT define Zod schemas locally in frontend or backend files.** Always place them in `common/src/schemas/` and export them.
 
 ### Project Structure
 ```
 common/
 ├── src/
 │   ├── schemas/
-│   │   └── user.ts       # User-related schemas
+│   │   ├── user.ts       # User-related schemas
+│   │   └── ticket.ts     # Ticket-related schemas, enums, and query schemas
 │   └── index.ts          # Package entry point (exports all schemas)
 ├── package.json
 └── tsconfig.json
@@ -245,7 +255,7 @@ common/
 
    // Backend (Express route validation)
    import { createUserSchema } from '@helpdesk/common';
-   
+
    router.post('/users', async (req, res) => {
      const result = createUserSchema.safeParse(req.body);
      if (!result.success) {
@@ -254,11 +264,45 @@ common/
    });
    ```
 
+### Query Parameter Schemas
+
+Query parameter schemas (like pagination, filtering, sorting) should also be in `common/`:
+
+```typescript
+// common/src/schemas/ticket.ts
+import { z } from 'zod';
+
+export const VALID_SORT_COLUMNS = ['id', 'subject', 'createdAt'] as const;
+export type SortColumn = typeof VALID_SORT_COLUMNS[number];
+export type SortOrder = 'asc' | 'desc';
+
+export const listTicketsQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+  search: z.string().optional(),
+  status: z.nativeEnum(TicketStatus).optional(),
+  category: z.nativeEnum(TicketCategory).optional(),
+  sortBy: z.enum(VALID_SORT_COLUMNS).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>;
+```
+
+Frontend can use the inferred type directly:
+```typescript
+// frontend/src/lib/api.ts
+import { listTicketsQuerySchema } from '@helpdesk/common';
+
+export type TicketQueryParams = z.infer<typeof listTicketsQuerySchema>;
+```
+
 ### Benefits
 - **Single source of truth** - Validation logic defined once
 - **Type safety** - Shared types inferred from schemas
 - **Consistency** - Frontend and backend use identical validation rules
 - **Maintainability** - Changes to validation propagate to both ends
+- **No duplication** - Eliminates redundant type definitions
 
 ### Files Reference
 
@@ -266,6 +310,7 @@ common/
 |------|---------|
 | `common/src/index.ts` | Package entry point |
 | `common/src/schemas/user.ts` | User-related schemas |
+| `common/src/schemas/ticket.ts` | Ticket schemas, enums, query schemas |
 | `common/package.json` | Package configuration |
 
 ## Form Handling (React Hook Form + Zod)
@@ -357,6 +402,8 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
 ### Overview
 Backend request validation uses **Zod** for schema validation on API endpoints. Schemas are imported from `@helpdesk/common` for consistency with frontend forms.
 
+**Rule:** All Zod schemas must be defined in `common/src/schemas/`. Do NOT define schemas locally in backend route files. See [Shared Code (Common Package)](#shared-code-common-package) for details.
+
 ### Usage Pattern
 
 ```typescript
@@ -390,8 +437,9 @@ router.post('/users', async (req, res) => {
 
 | File | Purpose |
 |------|---------|
-| `backend/src/routes/admin.ts` | Admin routes with Zod validation |
-| `common/src/schemas/` | Shared Zod schemas |
+| `backend/src/routes/admin.ts` | Admin routes with Zod validation (imports from @helpdesk/common) |
+| `backend/src/routes/tickets.ts` | Ticket routes with Zod validation (imports from @helpdesk/common) |
+| `common/src/schemas/` | Shared Zod schemas (single source of truth) |
 
 ## E2E Testing (Playwright)
 

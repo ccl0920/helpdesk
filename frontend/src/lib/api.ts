@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { z } from 'zod';
 import { API_BASE_URL } from './config';
 
 import { Role } from './role';
-import { TicketStatus, TicketCategory } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, listTicketsQuerySchema } from '@helpdesk/common';
 
 /**
  * User interface matching backend Prisma schema
@@ -84,18 +85,9 @@ export interface PaginatedTickets {
 }
 
 /**
- * Query parameters for listing tickets
+ * Query parameters for listing tickets (inferred from shared schema)
  */
-export interface TicketQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: TicketStatus;
-  category?: TicketCategory;
-  assignedToId?: string | null;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+export type TicketQueryParams = z.infer<typeof listTicketsQuerySchema>;
 
 // Axios instance with default config
 const api = axios.create({

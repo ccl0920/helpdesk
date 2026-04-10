@@ -26,8 +26,13 @@ export {
   createTicketFromEmailSchema,
   updateTicketSchema,
   createMessageSchema,
+  VALID_SORT_COLUMNS,
+  listTicketsQuerySchema,
   type CreateTicketInput,
   type CreateTicketFromEmailInput,
   type UpdateTicketInput,
   type CreateMessageInput,
+  type SortColumn,
+  type SortOrder,
+  type ListTicketsQuery,
 } from './schemas/ticket';

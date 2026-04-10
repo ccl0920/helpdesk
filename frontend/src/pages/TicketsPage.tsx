@@ -4,7 +4,7 @@ import { fetchTickets } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TicketsTable } from '@/components/TicketsTable';
 import { TicketFiltersBar } from '@/components/TicketFiltersBar';
-import { TicketStatus, TicketCategory } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, type SortColumn, type SortOrder } from '@helpdesk/common';
 
 interface TicketFilters {
   search?: string;
@@ -15,8 +15,8 @@ interface TicketFilters {
 
 export function TicketsPage() {
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<SortColumn>('createdAt');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [filters, setFilters] = useState<TicketFilters>({});
   const [debouncedFilters, setDebouncedFilters] = useState<TicketFilters>({});
   const limit = 10;
@@ -30,7 +30,7 @@ export function TicketsPage() {
     return () => clearTimeout(timer);
   }, [filters]);
 
-  const handleSortChange = (newSortBy: string, newSortOrder: 'asc' | 'desc') => {
+  const handleSortChange = (newSortBy: SortColumn, newSortOrder: SortOrder) => {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
     setPage(1); // Reset to first page when sorting changes
