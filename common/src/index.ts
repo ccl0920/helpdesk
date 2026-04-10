@@ -36,3 +36,8 @@ export {
   type SortOrder,
   type ListTicketsQuery,
 } from './schemas/ticket';
+
+export {
+  STATUS_CONFIG,
+  CATEGORY_CONFIG,
+} from './schemas/ticket-config';

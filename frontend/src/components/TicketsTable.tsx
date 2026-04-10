@@ -4,12 +4,12 @@ import {
   getSortedRowModel,
   flexRender,
   type ColumnDef,
-  type SortingState,
 } from '@tanstack/react-table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { LinkButton } from '@/components/ui/link-button';
 import {
   Table,
   TableBody,
@@ -18,20 +18,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { TicketStatus, TicketCategory, type SortColumn, type SortOrder } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, type SortColumn, type SortOrder, STATUS_CONFIG, CATEGORY_CONFIG } from '@helpdesk/common';
 import type { PaginatedTickets, Ticket } from '@/lib/api';
-
-const STATUS_CONFIG: Record<TicketStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  [TicketStatus.OPEN]: { label: 'Open', variant: 'default' },
-  [TicketStatus.RESOLVED]: { label: 'Resolved', variant: 'outline' },
-  [TicketStatus.CLOSED]: { label: 'Closed', variant: 'secondary' },
-};
-
-const CATEGORY_CONFIG: Record<TicketCategory, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  [TicketCategory.GENERAL_QUESTION]: { label: 'General', variant: 'outline' },
-  [TicketCategory.TECHNICAL_QUESTION]: { label: 'Technical', variant: 'outline' },
-  [TicketCategory.REFUND_REQUEST]: { label: 'Refund', variant: 'destructive' },
-};
 
 interface TicketsTableProps {
   data: PaginatedTickets | undefined;
@@ -74,11 +62,14 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
     {
       accessorKey: 'subject',
       header: 'Subject',
-      cell: ({ row }) => (
-        <span className="font-medium max-w-xs truncate block">
-          {row.getValue('subject')}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const ticket = row.original;
+        return (
+          <LinkButton to={`/tickets/${ticket.id}`} className="font-medium max-w-xs truncate block">
+            {row.getValue('subject')}
+          </LinkButton>
+        );
+      },
     },
     {
       accessorKey: 'emailFrom',
