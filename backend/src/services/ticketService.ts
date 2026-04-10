@@ -145,6 +145,7 @@ export type SortOrder = 'asc' | 'desc';
 export async function listTickets(options: {
   page?: number;
   limit?: number;
+  search?: string;
   status?: TicketStatus;
   category?: TicketCategory;
   assignedToId?: string | null;
@@ -154,6 +155,7 @@ export async function listTickets(options: {
   const {
     page = 1,
     limit = 20,
+    search,
     status,
     category,
     assignedToId,
@@ -165,6 +167,18 @@ export async function listTickets(options: {
 
   // Build where clause
   const where: Record<string, any> = {};
+  
+  // Add search filter
+  if (search) {
+    where.OR = [
+      { subject: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { emailFrom: { contains: search, mode: 'insensitive' } },
+      { senderName: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+  
+  // Add other filters
   if (status) where.status = status;
   if (category) where.category = category;
   if (assignedToId === null) where.assignedToId = null;

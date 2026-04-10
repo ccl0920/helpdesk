@@ -89,6 +89,7 @@ export interface PaginatedTickets {
 export interface TicketQueryParams {
   page?: number;
   limit?: number;
+  search?: string;
   status?: TicketStatus;
   category?: TicketCategory;
   assignedToId?: string | null;
