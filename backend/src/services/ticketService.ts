@@ -154,7 +154,7 @@ export async function listTickets(options: {
 } = {}): Promise<PaginatedTickets> {
   const {
     page = 1,
-    limit = 20,
+    limit = 10,
     search,
     status,
     category,

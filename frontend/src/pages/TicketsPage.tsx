@@ -19,7 +19,7 @@ export function TicketsPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filters, setFilters] = useState<TicketFilters>({});
   const [debouncedFilters, setDebouncedFilters] = useState<TicketFilters>({});
-  const limit = 20;
+  const limit = 10;
 
   // Debounce search input
   useEffect(() => {

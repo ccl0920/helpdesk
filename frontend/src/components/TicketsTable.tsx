@@ -44,7 +44,7 @@ interface TicketsTableProps {
 }
 
 export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sortOrder, onSortChange }: TicketsTableProps) {
-  const limit = data?.limit ?? 20;
+  const limit = data?.limit ?? 10;
 
   function formatDate(dateString: string) {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -275,9 +275,66 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
             >
               Previous
             </Button>
-            <span className="text-sm text-muted-foreground">
-              Page {page} of {data.totalPages}
-            </span>
+
+            {/* Page number buttons */}
+            <div className="flex items-center gap-1">
+              {(() => {
+                const totalPages = data.totalPages;
+                const pages: (number | string)[] = [];
+                const delta = 2; // Number of pages to show around current page
+
+                if (totalPages <= 7) {
+                  // Show all pages if 7 or fewer
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Always show first page
+                  pages.push(1);
+
+                  // Calculate range around current page
+                  const rangeStart = Math.max(2, page - delta);
+                  const rangeEnd = Math.min(totalPages - 1, page + delta);
+
+                  // Add ellipsis before range if needed
+                  if (rangeStart > 2) {
+                    pages.push('...');
+                  }
+
+                  // Add pages in range
+                  for (let i = rangeStart; i <= rangeEnd; i++) {
+                    pages.push(i);
+                  }
+
+                  // Add ellipsis after range if needed
+                  if (rangeEnd < totalPages - 1) {
+                    pages.push('...');
+                  }
+
+                  // Always show last page
+                  pages.push(totalPages);
+                }
+
+                return pages.map((p, idx) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${idx}`} className="px-2 text-muted-foreground">
+                      ...
+                    </span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant={page === p ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => onPageChange(p as number)}
+                      className="min-w-9"
+                    >
+                      {p}
+                    </Button>
+                  )
+                );
+              })()}
+            </div>
+
             <Button
               variant="outline"
               size="sm"
