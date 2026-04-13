@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
-import { STATUS_CONFIG, CATEGORY_CONFIG } from '@helpdesk/common';
+import { STATUS_CONFIG, CATEGORY_CONFIG, TicketStatus, TicketCategory } from '@helpdesk/common';
 import {
   Select,
   SelectContent,
@@ -37,9 +37,22 @@ export function TicketDetailPage() {
     select: (users) => users.filter((u) => u.role === Role.AGENT || u.role === Role.ADMIN),
   });
 
+  // Local state for status and category
+  const [selectedStatus, setSelectedStatus] = useState<TicketStatus | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<TicketCategory | null | 'none'>(null);
+
+  // Sync local state with ticket data
+  useEffect(() => {
+    if (ticket) {
+      setSelectedStatus(ticket.status);
+      setSelectedCategory(ticket.category || 'none');
+    }
+  }, [ticket]);
+
   // Mutation for updating ticket
   const updateMutation = useMutation({
-    mutationFn: (data: { assignedToId?: string | null }) => updateTicket(id!, data),
+    mutationFn: (data: { assignedToId?: string | null; status?: TicketStatus; category?: TicketCategory | null }) =>
+      updateTicket(id!, data),
     onSuccess: (updatedTicket) => {
       queryClient.setQueryData(['ticket', id], updatedTicket);
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
@@ -56,7 +69,31 @@ export function TicketDetailPage() {
   const handleAgentChange = async (agentId: string) => {
     const newAgentId = agentId === 'unassigned' ? null : agentId;
     setSelectedAgentId(newAgentId);
-    await updateMutation.mutateAsync({ assignedToId: newAgentId });
+    try {
+      await updateMutation.mutateAsync({ assignedToId: newAgentId });
+    } catch {
+      // Error is handled by updateMutation.isError state
+    }
+  };
+
+  const handleStatusChange = async (status: string) => {
+    const newStatus = status as TicketStatus;
+    setSelectedStatus(newStatus);
+    try {
+      await updateMutation.mutateAsync({ status: newStatus });
+    } catch {
+      // Error is handled by updateMutation.isError state
+    }
+  };
+
+  const handleCategoryChange = async (category: string) => {
+    const newCategory = category === 'none' ? null : (category as TicketCategory);
+    setSelectedCategory(newCategory || 'none');
+    try {
+      await updateMutation.mutateAsync({ category: newCategory });
+    } catch {
+      // Error is handled by updateMutation.isError state
+    }
   };
 
   if (isLoading) {
@@ -114,85 +151,130 @@ export function TicketDetailPage() {
 
       <Card>
         <CardHeader>
-          <div className="flex items-start justify-between gap-4">
-            <CardTitle className="text-xl">{ticket.subject}</CardTitle>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant={STATUS_CONFIG[ticket.status].variant}>
-                {STATUS_CONFIG[ticket.status].label}
-              </Badge>
-              {ticket.category && (
-                <Badge variant={CATEGORY_CONFIG[ticket.category].variant}>
-                  {CATEGORY_CONFIG[ticket.category].label}
-                </Badge>
-              )}
-            </div>
-          </div>
+          <CardTitle className="text-xl">{ticket.subject}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Ticket Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">From:</span>
-              <div className="mt-1">
-                {ticket.senderName && (
-                  <p className="font-medium">{ticket.senderName}</p>
-                )}
-                <p className="text-muted-foreground">{ticket.emailFrom}</p>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column - Ticket Details */}
+            <div className="space-y-6 text-sm">
+              <div>
+                <span className="text-muted-foreground">From:</span>
+                <div className="mt-1">
+                  {ticket.senderName && (
+                    <p className="font-medium">{ticket.senderName}</p>
+                  )}
+                  <p className="text-muted-foreground">{ticket.emailFrom}</p>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-muted-foreground">Created:</span>
+                <p className="mt-1 font-medium">{formatDate(ticket.createdAt)}</p>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Description</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
               </div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Created:</span>
-              <p className="mt-1 font-medium">{formatDate(ticket.createdAt)}</p>
-            </div>
-            <div className="md:col-span-2">
-              <span className="text-muted-foreground">Assigned To:</span>
-              <div className="mt-1">
-                <Select
-                  value={selectedAgentId || 'unassigned'}
-                  onValueChange={handleAgentChange}
-                  disabled={updateMutation.isPending}
-                >
-                  <SelectTrigger className="w-full md:w-64" aria-label="Select an agent">
-                    <SelectValue>
-                      {selectedAgentId
-                        ? (agents.find((a) => a.id === selectedAgentId)?.name ||
-                            ticket.assignedTo?.name ||
-                            agents.find((a) => a.id === selectedAgentId)?.email ||
-                            ticket.assignedTo?.email ||
-                            'Unknown')
-                        : 'Unassigned'}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="unassigned">Unassigned</SelectItem>
-                    {/* Add currently assigned agent if not in agents list */}
-                    {ticket.assignedTo &&
-                      !agents.find((a) => a.id === ticket.assignedToId) && (
-                        <SelectItem value={ticket.assignedToId!}>
-                          {ticket.assignedTo.name || ticket.assignedTo.email}
+
+            {/* Right Column - Dropdowns */}
+            <div className="space-y-4">
+              <div>
+                <span className="text-muted-foreground text-sm">Status</span>
+                <div className="mt-1">
+                  <Select
+                    value={selectedStatus || ticket.status}
+                    onValueChange={handleStatusChange}
+                    disabled={updateMutation.isPending}
+                  >
+                    <SelectTrigger className="w-full" aria-label="Update status">
+                      <SelectValue>
+                        {STATUS_CONFIG[selectedStatus || ticket.status].label}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(TicketStatus).map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {STATUS_CONFIG[status].label}
                         </SelectItem>
-                      )}
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name || agent.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-muted-foreground text-sm">Category</span>
+                <div className="mt-1">
+                  <Select
+                    value={selectedCategory || 'none'}
+                    onValueChange={handleCategoryChange}
+                    disabled={updateMutation.isPending}
+                  >
+                    <SelectTrigger className="w-full" aria-label="Update category">
+                      <SelectValue>
+                        {selectedCategory === 'none' || !selectedCategory
+                          ? 'No Category'
+                          : CATEGORY_CONFIG[selectedCategory as TicketCategory].label}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Category</SelectItem>
+                      {Object.values(TicketCategory).map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {CATEGORY_CONFIG[category].label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div>
+                <span className="text-muted-foreground text-sm">Assigned To</span>
+                <div className="mt-1">
+                  <Select
+                    value={selectedAgentId || 'unassigned'}
+                    onValueChange={handleAgentChange}
+                    disabled={updateMutation.isPending}
+                  >
+                    <SelectTrigger className="w-full" aria-label="Select an agent">
+                      <SelectValue>
+                        {selectedAgentId
+                          ? (agents.find((a) => a.id === selectedAgentId)?.name ||
+                              ticket.assignedTo?.name ||
+                              agents.find((a) => a.id === selectedAgentId)?.email ||
+                              ticket.assignedTo?.email ||
+                              'Unknown')
+                          : 'Unassigned'}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {/* Add currently assigned agent if not in agents list */}
+                      {ticket.assignedTo &&
+                        !agents.find((a) => a.id === ticket.assignedToId) && (
+                          <SelectItem value={ticket.assignedToId!}>
+                            {ticket.assignedTo.name || ticket.assignedTo.email}
+                          </SelectItem>
+                        )}
+                      {agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name || agent.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 {updateMutation.isPending && (
                   <p className="text-xs text-muted-foreground mt-1">Updating...</p>
                 )}
                 {updateMutation.isError && (
-                  <p className="text-xs text-destructive mt-1">Failed to update assignment</p>
+                  <p className="text-xs text-destructive mt-1">Failed to update</p>
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Original Description */}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold mb-2">Description</h3>
-            <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
           </div>
         </CardContent>
       </Card>

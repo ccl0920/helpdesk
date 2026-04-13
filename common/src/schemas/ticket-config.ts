@@ -7,7 +7,7 @@ export const STATUS_CONFIG: Record<TicketStatus, { label: string; variant: 'defa
 };
 
 export const CATEGORY_CONFIG: Record<TicketCategory, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  [TicketCategory.GENERAL_QUESTION]: { label: 'General', variant: 'outline' },
-  [TicketCategory.TECHNICAL_QUESTION]: { label: 'Technical', variant: 'outline' },
-  [TicketCategory.REFUND_REQUEST]: { label: 'Refund', variant: 'destructive' },
+  [TicketCategory.GENERAL_QUESTION]: { label: 'General Question', variant: 'outline' },
+  [TicketCategory.TECHNICAL_QUESTION]: { label: 'Technical Question', variant: 'outline' },
+  [TicketCategory.REFUND_REQUEST]: { label: 'Refund Request', variant: 'destructive' },
 };

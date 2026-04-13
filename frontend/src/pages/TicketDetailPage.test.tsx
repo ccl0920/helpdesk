@@ -169,7 +169,7 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
     });
 
@@ -178,10 +178,10 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
 
-      const selectTrigger = screen.getByRole('combobox');
+      const selectTrigger = screen.getByRole('combobox', { name: /select an agent/i });
       await user.click(selectTrigger);
 
       expect(screen.getByRole('option', { name: 'Unassigned' })).toBeInTheDocument();
@@ -210,10 +210,10 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
 
-      const selectTrigger = screen.getByRole('combobox');
+      const selectTrigger = screen.getByRole('combobox', { name: /select an agent/i });
       await user.click(selectTrigger);
 
       expect(screen.getByRole('option', { name: 'Agent One' })).toBeInTheDocument();
@@ -244,10 +244,10 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
 
-      const selectTrigger = screen.getByRole('combobox');
+      const selectTrigger = screen.getByRole('combobox', { name: /select an agent/i });
       await user.click(selectTrigger);
 
       expect(screen.getByRole('option', { name: 'agent1@helpdesk.com' })).toBeInTheDocument();
@@ -260,12 +260,12 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        const combobox = screen.getByRole('combobox');
+        const combobox = screen.getByRole('combobox', { name: /select an agent/i });
         expect(combobox).toHaveTextContent(/unassigned/i);
       });
       
       // Verify Unassigned option is available
-      const combobox = screen.getByRole('combobox');
+      const combobox = screen.getByRole('combobox', { name: /select an agent/i });
       expect(combobox).toHaveTextContent(/unassigned/i);
     });
   });
@@ -295,10 +295,10 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
 
-      const selectTrigger = screen.getByRole('combobox');
+      const selectTrigger = screen.getByRole('combobox', { name: /select an agent/i });
       await user.click(selectTrigger);
 
       const agentOption = screen.getByRole('option', { name: 'Agent One' });
@@ -325,17 +325,17 @@ describe('TicketDetailPage', () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /select an agent/i })).toBeInTheDocument();
       });
 
-      const selectTrigger = screen.getByRole('combobox');
+      const selectTrigger = screen.getByRole('combobox', { name: /select an agent/i });
       await user.click(selectTrigger);
 
       const agentOption = screen.getByRole('option', { name: 'Agent One' });
       await user.click(agentOption);
 
       await waitFor(() => {
-        expect(screen.getByText(/failed to update assignment/i)).toBeInTheDocument();
+        expect(screen.getByText(/failed to update/i)).toBeInTheDocument();
       });
     });
   });
@@ -361,19 +361,19 @@ describe('TicketDetailPage', () => {
       });
     });
 
-    it('should display status badge', async () => {
+    it('should display status dropdown', async () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByText('Open')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /update status/i })).toBeInTheDocument();
       });
     });
 
-    it('should display category badge when present', async () => {
+    it('should display category dropdown when present', async () => {
       render(<TicketDetailPage />, { route: '/tickets/1', routePath: '/tickets/:id' });
 
       await waitFor(() => {
-        expect(screen.getByText('Technical')).toBeInTheDocument();
+        expect(screen.getByRole('combobox', { name: /update category/i })).toBeInTheDocument();
       });
     });
 
@@ -477,7 +477,10 @@ describe('TicketDetailPage', () => {
         expect(screen.getByText('Ticket #1')).toBeInTheDocument();
       });
 
-      expect(screen.getByText('Open')).toBeInTheDocument();
+      // Category dropdown should show "No Category"
+      await waitFor(() => {
+        expect(screen.getByRole('combobox', { name: /update category/i })).toHaveTextContent('No Category');
+      });
     });
 
     it('should handle empty messages array', async () => {
