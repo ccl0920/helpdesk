@@ -1,22 +1,63 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { fetchTicketById } from '@/lib/api';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchTicketById, updateTicket, fetchAgents } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft } from 'lucide-react';
 import { STATUS_CONFIG, CATEGORY_CONFIG } from '@helpdesk/common';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Role } from '@/lib/role';
+import type { User } from '@/lib/api';
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   const { data: ticket, isLoading, error } = useQuery({
     queryKey: ['ticket', id],
     queryFn: () => fetchTicketById(id!),
     enabled: !!id,
   });
+
+  // Fetch agents (users with AGENT or ADMIN role)
+  const { data: agents = [] } = useQuery({
+    queryKey: ['agents'],
+    queryFn: fetchAgents,
+    select: (users) => users.filter((u) => u.role === Role.AGENT || u.role === Role.ADMIN),
+  });
+
+  // Mutation for updating ticket
+  const updateMutation = useMutation({
+    mutationFn: (data: { assignedToId?: string | null }) => updateTicket(id!, data),
+    onSuccess: (updatedTicket) => {
+      queryClient.setQueryData(['ticket', id], updatedTicket);
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+    },
+  });
+
+  // Sync selectedAgentId with ticket.assignedToId when ticket loads
+  useEffect(() => {
+    if (ticket) {
+      setSelectedAgentId(ticket.assignedToId);
+    }
+  }, [ticket]);
+
+  const handleAgentChange = async (agentId: string) => {
+    const newAgentId = agentId === 'unassigned' ? null : agentId;
+    setSelectedAgentId(newAgentId);
+    await updateMutation.mutateAsync({ assignedToId: newAgentId });
+  };
 
   if (isLoading) {
     return (
@@ -103,12 +144,49 @@ export function TicketDetailPage() {
               <span className="text-muted-foreground">Created:</span>
               <p className="mt-1 font-medium">{formatDate(ticket.createdAt)}</p>
             </div>
-            {ticket.assignedTo && (
-              <div>
-                <span className="text-muted-foreground">Assigned To:</span>
-                <p className="mt-1 font-medium">{ticket.assignedTo.name || ticket.assignedTo.email}</p>
+            <div className="md:col-span-2">
+              <span className="text-muted-foreground">Assigned To:</span>
+              <div className="mt-1">
+                <Select
+                  value={selectedAgentId || 'unassigned'}
+                  onValueChange={handleAgentChange}
+                  disabled={updateMutation.isPending}
+                >
+                  <SelectTrigger className="w-full md:w-64" aria-label="Select an agent">
+                    <SelectValue>
+                      {selectedAgentId
+                        ? (agents.find((a) => a.id === selectedAgentId)?.name ||
+                            ticket.assignedTo?.name ||
+                            agents.find((a) => a.id === selectedAgentId)?.email ||
+                            ticket.assignedTo?.email ||
+                            'Unknown')
+                        : 'Unassigned'}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
+                    {/* Add currently assigned agent if not in agents list */}
+                    {ticket.assignedTo &&
+                      !agents.find((a) => a.id === ticket.assignedToId) && (
+                        <SelectItem value={ticket.assignedToId!}>
+                          {ticket.assignedTo.name || ticket.assignedTo.email}
+                        </SelectItem>
+                      )}
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name || agent.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {updateMutation.isPending && (
+                  <p className="text-xs text-muted-foreground mt-1">Updating...</p>
+                )}
+                {updateMutation.isError && (
+                  <p className="text-xs text-destructive mt-1">Failed to update assignment</p>
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Original Description */}

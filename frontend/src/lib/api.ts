@@ -166,3 +166,27 @@ export async function fetchTicketById(id: string): Promise<Ticket> {
   const response = await api.get<Ticket>(`/api/tickets/${id}`);
   return response.data;
 }
+
+/**
+ * Update a ticket
+ */
+export async function updateTicket(id: string, data: { status?: TicketStatus; category?: TicketCategory | null; assignedToId?: string | null }): Promise<Ticket> {
+  try {
+    const response = await api.put<Ticket>(`/api/tickets/${id}`, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Fetch all users (for agent assignment)
+ * Returns only users with AGENT or ADMIN role
+ */
+export async function fetchAgents(): Promise<User[]> {
+  const response = await api.get<User[]>('/api/admin/users');
+  return response.data;
+}

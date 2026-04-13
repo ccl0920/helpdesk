@@ -21,6 +21,7 @@ import {
   type TicketWithDetails,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
+import prisma from '../lib/prisma.js';
 
 const router = Router();
 
@@ -143,6 +144,20 @@ router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), asy
       return res.status(400).json({ error: 'Invalid ticket ID format' });
     }
 
+    // Validate assignedToId is a valid user if provided
+    if (data.assignedToId !== undefined) {
+      if (data.assignedToId !== null) {
+        const user = await prisma.user.findUnique({
+          where: { id: data.assignedToId },
+          select: { id: true },
+        });
+
+        if (!user) {
+          return res.status(400).json({ error: 'Invalid assignee: user does not exist' });
+        }
+      }
+    }
+
     const ticket = await updateTicket(id, data);
 
     res.json(ticket);
@@ -151,7 +166,7 @@ router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), asy
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'Ticket not found' });
     }
-    
+
     console.error('Error updating ticket:', error);
     res.status(500).json({
       error: 'Failed to update ticket',
