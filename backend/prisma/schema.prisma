@@ -28,6 +28,11 @@ enum TicketCategory {
   REFUND_REQUEST
 }
 
+enum SenderType {
+  AGENT
+  CUSTOMER
+}
+
 // Better Auth models
 
 model User {
@@ -122,16 +127,17 @@ model Ticket {
 }
 
 model TicketMessage {
-  id        String   @id @default(cuid())
-  ticketId  BigInt
-  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  from      String
-  to        String
-  subject   String
-  body      String   @db.Text
-  bodyHtml  String?  @db.Text
-  headers   Json?
-  createdAt DateTime @default(now())
+  id          String     @id @default(cuid())
+  ticketId    BigInt
+  ticket      Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  from        String
+  to          String
+  subject     String
+  body        String     @db.Text
+  bodyHtml    String?    @db.Text
+  senderType  SenderType @default(CUSTOMER)
+  headers     Json?
+  createdAt   DateTime   @default(now())
 
   @@index([ticketId])
   @@index([createdAt(sort: Desc)])

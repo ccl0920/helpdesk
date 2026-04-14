@@ -5,6 +5,7 @@ import {
   type CreateMessageInput,
   TicketStatus,
   TicketCategory,
+  SenderType,
   VALID_SORT_COLUMNS,
   type SortColumn,
   type SortOrder,
@@ -35,6 +36,7 @@ export interface TicketWithDetails {
     subject: string;
     body: string;
     bodyHtml: string | null;
+    senderType: SenderType;
     createdAt: Date;
   }>;
   createdAt: Date;
@@ -74,6 +76,7 @@ export async function createTicket(
           to: data.emailTo,
           subject: data.subject,
           body: data.description,
+          senderType: SenderType.CUSTOMER,
         },
       },
     },
@@ -94,6 +97,7 @@ export async function createTicket(
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },
@@ -126,6 +130,7 @@ export async function getTicketById(id: string): Promise<TicketWithDetails | nul
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },
@@ -214,6 +219,7 @@ export async function listTickets(options: {
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },
@@ -260,6 +266,7 @@ export async function updateTicket(
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },
@@ -286,6 +293,7 @@ export async function addMessage(
           subject: data.subject,
           body: data.body,
           bodyHtml: data.bodyHtml || null,
+          senderType: data.senderType || SenderType.AGENT,
           headers: {},
         },
       },
@@ -307,6 +315,7 @@ export async function addMessage(
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },
@@ -347,6 +356,7 @@ export async function findTicketByMessageId(messageId: string): Promise<TicketWi
               subject: true,
               body: true,
               bodyHtml: true,
+              senderType: true,
               createdAt: true,
             },
           },
@@ -398,6 +408,7 @@ export async function findTicketBySender(
                 subject: true,
                 body: true,
                 bodyHtml: true,
+                senderType: true,
                 createdAt: true,
               },
             },
@@ -440,6 +451,7 @@ export async function findTicketBySender(
           subject: true,
           body: true,
           bodyHtml: true,
+          senderType: true,
           createdAt: true,
         },
       },

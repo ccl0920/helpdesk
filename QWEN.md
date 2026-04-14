@@ -385,17 +385,58 @@ export function CreateUserModal({ open, onOpenChange, onSubmit }: CreateUserModa
 
 ### Error Display
 
+#### Form Field Errors
+
+Use the reusable `FormFieldError` component to display form field errors consistently:
+
 ```typescript
-{errors.fieldName && (
-  <p className="text-sm text-destructive">{errors.fieldName.message}</p>
-)}
+import { FormFieldError } from '@/components/ui/form-field-error';
+
+// Use in form components
+<div>
+  <Input {...register('name')} placeholder="Name" />
+  <FormFieldError error={errors.name} />
+</div>
 ```
+
+The component:
+- Accepts an optional `error` prop of type `FieldError` from react-hook-form
+- Renders nothing if no error is present
+- Displays error message with consistent styling (`text-sm text-destructive mt-1`)
+
+**Do NOT** duplicate form field error markup. Always use `FormFieldError` for consistency.
+
+#### General Error Messages
+
+Use the `ErrorMessage` component for non-form errors (API failures, load errors, etc.):
+
+```typescript
+import { ErrorMessage } from '@/components/ui/error-message';
+
+// Load error
+<ErrorMessage message="Failed to load data. Please try again." />
+
+// Mutation failure with custom styling
+<ErrorMessage message="Failed to update" className="text-xs mt-1" />
+```
+
+The component:
+- Accepts `message` (required) and `className` (optional) props
+- Includes an alert icon for visual consistency
+- Used for mutation errors, load failures, and other error states
+
+**Do NOT** duplicate general error message markup. Always use `ErrorMessage` for consistency.
 
 ### Files Reference
 
 | File | Purpose |
 |------|---------|
-| `frontend/src/components/CreateUserModal.tsx` | Example form with react-hook-form + Zod |
+| `frontend/src/components/ui/form-field-error.tsx` | Reusable form field error display component |
+| `frontend/src/components/ui/error-message.tsx` | Reusable general error message component |
+| `frontend/src/components/UserFormModal.tsx` | Example form with FormFieldError |
+| `frontend/src/components/ReplyForm.tsx` | Example form with FormFieldError |
+| `frontend/src/pages/TicketDetailPage.tsx` | Example with ErrorMessage for load/mutation errors |
+| `frontend/src/pages/TicketsPage.tsx` | Example with ErrorMessage for load errors |
 
 ## Backend Validation (Zod)
 
@@ -480,6 +521,31 @@ Rate limiting is **disabled** in development and test environments. It only appl
 | File | Purpose |
 |------|---------|
 | `backend/src/middleware/rateLimiter.ts` | Rate limiting middleware (production only) |
+
+### E2E Testing Guidelines
+
+**Rule: Write only E2E tests that cannot be covered by unit tests.**
+
+E2E tests should focus on integration-level flows that unit tests cannot verify:
+- **Navigation flows** — Multi-page journeys (e.g., list → detail → back)
+- **End-to-end user actions** — Form submission → API call → UI update → data persists
+- **Cross-component integration** — Multiple components working together on a page
+- **Authentication gates** — Redirects, session handling, role-based page access
+- **Real browser behavior** — URL changes, cookie handling, redirects
+
+**Do NOT write E2E tests for:**
+- Component rendering (covered by unit tests)
+- Individual component behavior (dropdowns, forms, buttons — use unit tests)
+- Validation logic (use unit tests with Zod schema)
+- Loading/error states (covered by unit tests)
+- Anything that can be tested in isolation with `@testing-library/react`
+
+**E2E test structure:**
+- Group tests by page/feature: `test.describe('Ticket Detail Page - Navigation', ...)`
+- Use helper functions for auth, data creation, and common actions
+- Create test data via backend API in `test.beforeAll` or within tests
+- Use resilient selectors: `getByRole`, `getByLabel`, `getByText`
+- Verify end states, not intermediate steps
 
 ### Using the playwright-e2e-tester Agent
 

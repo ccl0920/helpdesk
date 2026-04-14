@@ -16,6 +16,7 @@ export {
 export {
   TicketStatus,
   TicketCategory,
+  SenderType,
   ticketSubjectField,
   ticketDescriptionField,
   ticketEmailField,

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchTickets } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ErrorMessage } from '@/components/ui/error-message';
 import { TicketsTable } from '@/components/TicketsTable';
 import { TicketFiltersBar } from '@/components/TicketFiltersBar';
 import { TicketStatus, TicketCategory, type SortColumn, type SortOrder } from '@helpdesk/common';
@@ -50,7 +51,7 @@ export function TicketsPage() {
     return (
       <Card>
         <CardContent className="pt-6">
-          <p className="text-destructive">Failed to load tickets. Please try again.</p>
+          <ErrorMessage message="Failed to load tickets. Please try again." />
         </CardContent>
       </Card>
     );

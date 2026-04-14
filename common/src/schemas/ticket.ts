@@ -19,6 +19,14 @@ export enum TicketCategory {
 }
 
 /**
+ * SenderType enum values (matches Prisma schema)
+ */
+export enum SenderType {
+  AGENT = 'AGENT',
+  CUSTOMER = 'CUSTOMER',
+}
+
+/**
  * Reusable field schemas for ticket validation
  */
 export const ticketSubjectField = z.string().trim().min(1, 'Subject is required');
@@ -67,11 +75,12 @@ export const updateTicketSchema = z.object({
  * Zod schema for adding a message to a ticket
  */
 export const createMessageSchema = z.object({
-  from: ticketEmailField,
-  to: ticketEmailField,
-  subject: ticketSubjectField,
-  body: z.string().trim().min(1, 'Message body is required'),
-  bodyHtml: z.string().trim().optional(),
+  from: ticketEmailField.max(255, 'Email must be less than 255 characters'),
+  to: ticketEmailField.max(255, 'Email must be less than 255 characters'),
+  subject: ticketSubjectField.max(255, 'Subject must be less than 255 characters'),
+  body: z.string().trim().min(1, 'Message body is required').max(1000, 'Message body must be less than 10000 characters'),
+  bodyHtml: z.string().trim().max(3000, 'HTML body must be less than 50000 characters').optional(),
+  senderType: z.nativeEnum(SenderType).default(SenderType.AGENT),
 });
 
 /**

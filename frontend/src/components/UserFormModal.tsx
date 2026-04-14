@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { FormFieldError } from '@/components/ui/form-field-error';
 import {
   Select,
   SelectContent,
@@ -129,7 +130,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 {...register('name')}
               />
               {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
+                <FormFieldError error={errors.name} />
               )}
             </div>
 
@@ -145,7 +146,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 {...register('email')}
               />
               {errors.email && (
-                <p className="text-sm text-destructive">{errors.email.message}</p>
+                <FormFieldError error={errors.email} />
               )}
             </div>
 
@@ -163,7 +164,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 {...register('password')}
               />
               {errors.password && (
-                <p className="text-sm text-destructive">{errors.password.message}</p>
+                <FormFieldError error={errors.password} />
               )}
             </div>
 
@@ -182,7 +183,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 </SelectContent>
               </Select>
               {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message}</p>
+                <FormFieldError error={errors.role} />
               )}
             </div>
           </div>

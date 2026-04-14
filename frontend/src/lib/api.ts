@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { API_BASE_URL } from './config';
 
 import { Role } from './role';
-import { TicketStatus, TicketCategory, listTicketsQuerySchema } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, SenderType, listTicketsQuerySchema, type CreateMessageInput } from '@helpdesk/common';
 
 /**
  * User interface matching backend Prisma schema
@@ -47,6 +47,7 @@ export interface TicketMessage {
   subject: string;
   body: string;
   bodyHtml: string | null;
+  senderType: SenderType;
   createdAt: string;
 }
 
@@ -189,4 +190,19 @@ export async function updateTicket(id: string, data: { status?: TicketStatus; ca
 export async function fetchAgents(): Promise<User[]> {
   const response = await api.get<User[]>('/api/admin/users');
   return response.data;
+}
+
+/**
+ * Add a message/reply to a ticket
+ */
+export async function addMessage(ticketId: string, data: CreateMessageInput): Promise<Ticket> {
+  try {
+    const response = await api.post<Ticket>(`/api/tickets/${ticketId}/messages`, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
 }

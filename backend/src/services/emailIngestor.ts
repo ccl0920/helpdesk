@@ -6,6 +6,7 @@ import {
   findTicketBySender,
   type TicketWithDetails,
 } from './ticketService.js';
+import { SenderType } from '@helpdesk/common';
 import prisma from '../lib/prisma.js';
 
 /**
@@ -57,6 +58,7 @@ export async function processIncomingEmail(rawEmail: string | Buffer): Promise<{
       subject: parsedEmail.subject,
       body: parsedEmail.body,
       bodyHtml: parsedEmail.bodyHtml,
+      senderType: SenderType.CUSTOMER,
     });
 
     // Store Message-ID in the new message headers
@@ -150,6 +152,7 @@ export async function processParsedEmail(parsedEmail: ParsedEmail): Promise<{
       subject: parsedEmail.subject,
       body: parsedEmail.body,
       bodyHtml: parsedEmail.bodyHtml,
+      senderType: SenderType.CUSTOMER,
     });
 
     // Store Message-ID in the new message headers
