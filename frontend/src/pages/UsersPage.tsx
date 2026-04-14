@@ -24,6 +24,7 @@ export function UsersPage() {
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
       setIsCreating(false);
     },
   });
@@ -33,6 +34,7 @@ export function UsersPage() {
       updateUser(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
       setEditingUser(null);
     },
   });
@@ -41,6 +43,10 @@ export function UsersPage() {
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      // Invalidate all ticket-related queries since assigned agents may have changed
+      queryClient.invalidateQueries({ queryKey: ['ticket'] });
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['agents'] });
       setDeletingUser(null);
     },
   });

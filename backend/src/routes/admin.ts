@@ -242,6 +242,12 @@ router.delete('/users/:id', async (req, res) => {
         data: { deletedAt: new Date() },
       });
 
+      // Unassign all tickets from the deleted user
+      await tx.ticket.updateMany({
+        where: { assignedToId: id },
+        data: { assignedToId: null },
+      });
+
       // Revoke all sessions for the deleted user
       await tx.session.deleteMany({
         where: { userId: id },
