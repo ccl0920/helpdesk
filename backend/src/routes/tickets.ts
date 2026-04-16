@@ -1,5 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import { generateText, Output } from 'ai';
+import { createZhipu } from 'zhipu-ai-provider';
 import { requireAuth } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import {
@@ -7,6 +9,7 @@ import {
   updateTicketSchema,
   createMessageSchema,
   listTicketsQuerySchema,
+  polishReplySchema,
   TicketStatus,
   TicketCategory,
   type UpdateTicketInput,
@@ -192,6 +195,80 @@ router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageS
     res.status(500).json({
       error: 'Failed to add message',
       details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
+ * POST /api/tickets/polish
+ * Polish an agent's reply using GLM-4.7-Flash
+ */
+router.post('/tickets/polish', requireAuth, validateRequest(polishReplySchema), async (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.ZHIPU_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'AI service not configured. Please set ZHIPU_API_KEY in environment variables.',
+      });
+    }
+
+    const { originalText, ticketContext } = req.body as z.infer<typeof polishReplySchema>;
+
+    const agentName = req.session?.user?.name || req.session?.user?.email || 'Support Agent';
+    const customerName = ticketContext?.split('\n')[0]?.replace('Customer: ', '') || 'Customer';
+
+    const zhipuProvider = createZhipu({
+      baseURL: 'https://api.z.ai/api/paas/v4',
+      apiKey,
+    });
+    const zhipuModel = zhipuProvider('glm-4.7-flash');
+
+    const { output } = await generateText({
+      model: zhipuModel,
+      output: Output.json(),
+      prompt: `You are a professional customer support agent helping to polish agent replies.
+
+Your task is to improve the following reply to make it more professional, clear, and helpful.
+
+Context:
+- Customer name: ${customerName}
+- Agent name: ${agentName}
+
+${ticketContext ? `Ticket context: ${ticketContext}\n\n` : ''}Original reply:
+${originalText}
+
+Improve the reply by:
+1. Addressing the customer by name
+2. Making it more professional and courteous
+3. Improving clarity and grammar
+4. Ensuring it addresses the customer's concern
+5. Signing the reply as "${agentName}"
+6. Keeping it concise but comprehensive
+
+Respond with a JSON object with a single key "polishedText" containing the improved reply.`,
+    });
+
+    let polishedText = '';
+    if (output && typeof output === 'object' && 'polishedText' in output) {
+      polishedText = String(output.polishedText);
+    }
+
+    res.json({ polishedText });
+  } catch (error: any) {
+    console.error('Error polishing reply:', error);
+
+    const errorMessage = error.message || '';
+    if (errorMessage.includes('rate limit') || errorMessage.includes('Rate limit')) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Please wait a moment and try again.',
+        details: errorMessage,
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to polish reply',
+      details: errorMessage,
     });
   }
 });

@@ -16,6 +16,7 @@
     "@helpdesk/common": "*",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "ai": "^6.0.162",
     "bcrypt": "^6.0.0",
     "better-auth": "^1.5.6",
     "cookie-parser": "^1.4.7",
@@ -29,6 +30,7 @@
     "nodemailer": "^8.0.5",
     "pg": "^8.20.0",
     "prisma": "^7.5.0",
+    "zhipu-ai-provider": "^0.3.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

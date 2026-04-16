@@ -36,6 +36,8 @@ export {
   type SortColumn,
   type SortOrder,
   type ListTicketsQuery,
+  polishReplySchema,
+  type PolishReplyInput,
 } from './schemas/ticket';
 
 export {

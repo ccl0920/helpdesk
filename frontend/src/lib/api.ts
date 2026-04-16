@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { API_BASE_URL } from './config';
 
 import { Role } from './role';
-import { TicketStatus, TicketCategory, SenderType, listTicketsQuerySchema, type CreateMessageInput } from '@helpdesk/common';
+import { TicketStatus, TicketCategory, SenderType, listTicketsQuerySchema, type CreateMessageInput, type PolishReplyInput } from '@helpdesk/common';
 
 /**
  * User interface matching backend Prisma schema
@@ -198,6 +198,21 @@ export async function fetchAgents(): Promise<User[]> {
 export async function addMessage(ticketId: string, data: CreateMessageInput): Promise<Ticket> {
   try {
     const response = await api.post<Ticket>(`/api/tickets/${ticketId}/messages`, data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Polish an agent's reply using GLM AI
+ */
+export async function polishReply(data: PolishReplyInput): Promise<{ polishedText: string }> {
+  try {
+    const response = await api.post<{ polishedText: string }>('/api/tickets/polish', data);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.error) {

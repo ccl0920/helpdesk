@@ -114,3 +114,13 @@ export const listTicketsQuerySchema = z.object({
 });
 
 export type ListTicketsQuery = z.infer<typeof listTicketsQuerySchema>;
+
+/**
+ * Zod schema for polishing an agent's reply
+ */
+export const polishReplySchema = z.object({
+  originalText: z.string().trim().min(1, 'Original text is required').max(10000, 'Text must be less than 10000 characters'),
+  ticketContext: z.string().trim().max(2000, 'Context must be less than 2000 characters').optional(),
+});
+
+export type PolishReplyInput = z.infer<typeof polishReplySchema>;

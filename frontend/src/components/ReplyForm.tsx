@@ -2,14 +2,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createMessageSchema, SenderType } from '@helpdesk/common';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { addMessage } from '@/lib/api';
+import { addMessage, polishReply } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { FormFieldError } from '@/components/ui/form-field-error';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Sparkles } from 'lucide-react';
 import type { Ticket } from '@/lib/api';
 
 type ReplyFormValues = {
@@ -33,6 +33,8 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ReplyFormValues>({
     resolver: zodResolver(createMessageSchema) as any,
@@ -44,6 +46,8 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
       senderType: SenderType.AGENT,
     },
   });
+
+  const bodyValue = watch('body');
 
   const addMessageMutation = useMutation({
     mutationFn: (data: ReplyFormValues) => addMessage(ticket.id.toString(), data),
@@ -59,8 +63,22 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
     },
   });
 
+  const polishMutation = useMutation({
+    mutationFn: () => polishReply({
+      originalText: bodyValue,
+      ticketContext: `Customer: ${ticket.senderName}\nSubject: ${ticket.subject}\nDescription: ${ticket.description}`,
+    }),
+    onSuccess: (data) => {
+      setValue('body', data.polishedText, { shouldDirty: true });
+    },
+  });
+
   const onSubmit = async (data: ReplyFormValues) => {
     await addMessageMutation.mutateAsync(data);
+  };
+
+  const handlePolish = async () => {
+    await polishMutation.mutateAsync();
   };
 
   return (
@@ -97,10 +115,37 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
             </p>
           )}
 
-          <div className="flex justify-end">
+          {polishMutation.isError && (
+            <p className="text-sm text-destructive">
+              {polishMutation.error instanceof Error
+                ? polishMutation.error.message
+                : 'Failed to polish reply. Please try again.'}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={!bodyValue.trim() || polishMutation.isPending}
+              onClick={handlePolish}
+              className="flex items-center gap-2"
+            >
+              {polishMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Polishing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Polish
+                </>
+              )}
+            </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !bodyValue.trim()}
               className="flex items-center gap-2"
             >
               {isSubmitting ? (
