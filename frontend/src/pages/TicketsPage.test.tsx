@@ -202,9 +202,9 @@ describe('TicketsPage', () => {
     render(<TicketsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Technical')).toBeInTheDocument();
-      expect(screen.getByText('Refund')).toBeInTheDocument();
-      expect(screen.getByText('General')).toBeInTheDocument();
+      expect(screen.getByText('Technical Question')).toBeInTheDocument();
+      expect(screen.getByText('Refund Request')).toBeInTheDocument();
+      expect(screen.getByText('General Question')).toBeInTheDocument();
     });
   });
 
