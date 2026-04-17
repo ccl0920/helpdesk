@@ -10,6 +10,7 @@ import {
   createMessageSchema,
   listTicketsQuerySchema,
   polishReplySchema,
+  summarizeTicketSchema,
   TicketStatus,
   TicketCategory,
   type UpdateTicketInput,
@@ -268,6 +269,113 @@ Respond with a JSON object with a single key "polishedText" containing the impro
 
     res.status(500).json({
       error: 'Failed to polish reply',
+      details: errorMessage,
+    });
+  }
+});
+
+/**
+ * POST /api/tickets/:id/summarize
+ * Summarize a ticket and its conversation history using GLM-4.7-Flash
+ */
+router.post('/tickets/:id/summarize', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const apiKey = process.env.ZHIPU_API_KEY;
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: 'AI service not configured. Please set ZHIPU_API_KEY in environment variables.',
+      });
+    }
+
+    const { id } = req.params as { id: string };
+
+    let bigintId: bigint;
+    try {
+      bigintId = BigInt(id);
+    } catch {
+      return res.status(400).json({ error: 'Invalid ticket ID format' });
+    }
+
+    const ticket = await prisma.ticket.findUnique({
+      where: { id: bigintId },
+      include: {
+        messages: {
+          orderBy: { createdAt: 'asc' },
+        },
+        assignedTo: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+
+    if (!ticket) {
+      return res.status(404).json({ error: 'Ticket not found' });
+    }
+
+    const zhipuProvider = createZhipu({
+      baseURL: 'https://api.z.ai/api/paas/v4',
+      apiKey,
+    });
+    const zhipuModel = zhipuProvider('glm-4.7-flash');
+
+    const conversationHistory = ticket.messages
+      .map((msg: { senderType: string; body: string }) => {
+        const sender = msg.senderType === 'AGENT' ? 'Agent' : 'Customer';
+        return `${sender}: ${msg.body}`;
+      })
+      .join('\n\n');
+
+    const context = `
+Ticket Subject: ${ticket.subject}
+Customer: ${ticket.senderName} (${ticket.emailFrom})
+Status: ${ticket.status}
+Category: ${ticket.category || 'Uncategorized'}
+Assigned to: ${ticket.assignedTo?.name || ticket.assignedTo?.email || 'Unassigned'}
+Created: ${ticket.createdAt.toISOString()}
+
+Description:
+${ticket.description}
+
+Conversation History:
+${conversationHistory || 'No messages yet'}
+`.trim();
+
+    const { output } = await generateText({
+      model: zhipuModel,
+      output: Output.text(),
+      prompt: `You are a professional customer support AI assistant. Your task is to summarize support tickets concisely.
+
+Provide a brief summary (2-4 sentences) that captures:
+1. The main issue or question
+2. Current status
+3. Any key actions taken or resolution steps
+
+Summary:
+${context}`,
+    });
+
+    const summary = typeof output === 'string' ? output : String(output || '');
+
+    const updatedTicket = await prisma.ticket.update({
+      where: { id: bigintId },
+      data: { summary },
+    });
+
+    res.json({ summary: updatedTicket.summary });
+  } catch (error: any) {
+    console.error('Error summarizing ticket:', error);
+
+    const errorMessage = error.message || '';
+    if (errorMessage.includes('rate limit') || errorMessage.includes('Rate limit')) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded. Please wait a moment and try again.',
+        details: errorMessage,
+      });
+    }
+
+    res.status(500).json({
+      error: 'Failed to summarize ticket',
       details: errorMessage,
     });
   }

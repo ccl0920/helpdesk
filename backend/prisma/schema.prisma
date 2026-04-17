@@ -115,6 +115,7 @@ model Ticket {
   emailTo     String
   assignedTo  User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
   assignedToId String?
+  summary     String?         @db.Text
   messages    TicketMessage[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt

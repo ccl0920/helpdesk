@@ -5,6 +5,7 @@ import { TicketDetailSkeleton } from '@/components/TicketDetailSkeleton';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { BackButton } from '@/components/BackButton';
 import { TicketDetail } from '@/components/TicketDetail';
+import { TicketSummary } from '@/components/TicketSummary';
 import { MessageThread } from '@/components/MessageThread';
 import { ReplyForm } from '@/components/ReplyForm';
 import { Role } from '@/lib/role';
@@ -44,6 +45,8 @@ export function TicketDetailPage() {
       <BackButton onBack={() => navigate('/tickets')} />
 
       <TicketDetail ticket={ticket} agents={agents} />
+
+      <TicketSummary ticket={ticket} />
 
       <MessageThread messages={ticket.messages} />
 

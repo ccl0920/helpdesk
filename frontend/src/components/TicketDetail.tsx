@@ -26,27 +26,27 @@ export function TicketDetail({ ticket, agents }: TicketDetailProps) {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column - Ticket Details */}
-            <div className="space-y-6 text-sm">
-              <div>
-                <span className="text-muted-foreground">From:</span>
-                <div className="mt-1">
-                  {ticket.senderName && (
-                    <p className="font-medium">{ticket.senderName}</p>
-                  )}
-                  <p className="text-muted-foreground">{ticket.emailFrom}</p>
-                </div>
-              </div>
-
-              <div>
-                <span className="text-muted-foreground">Created:</span>
-                <p className="mt-1 font-medium">{formatDate(ticket.createdAt)}</p>
-              </div>
-
-              <div className="border-t pt-4">
-                <h3 className="font-semibold mb-2">Description</h3>
-                <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+          <div className="space-y-6 text-sm">
+            <div>
+              <span className="text-muted-foreground">From:</span>
+              <div className="mt-1">
+                {ticket.senderName && (
+                  <p className="font-medium">{ticket.senderName}</p>
+                )}
+                <p className="text-muted-foreground">{ticket.emailFrom}</p>
               </div>
             </div>
+
+            <div>
+              <span className="text-muted-foreground">Created:</span>
+              <p className="mt-1 font-medium">{formatDate(ticket.createdAt)}</p>
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-2">Description</h3>
+              <p className="text-muted-foreground whitespace-pre-wrap">{ticket.description}</p>
+            </div>
+          </div>
 
           {/* Right Column - Dropdowns */}
           <div className="space-y-4">

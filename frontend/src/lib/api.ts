@@ -64,6 +64,7 @@ export interface Ticket {
   senderName: string;
   emailTo: string;
   assignedToId: string | null;
+  summary?: string | null;
   assignedTo: {
     id: string;
     name: string | null;
@@ -155,8 +156,8 @@ export async function deleteUser(id: string): Promise<{ message: string }> {
 /**
  * Fetch tickets with pagination and filtering
  */
-export async function fetchTickets(params: TicketQueryParams = {}): Promise<PaginatedTickets> {
-  const response = await api.get<PaginatedTickets>('/api/tickets', { params });
+export async function fetchTickets(params: Partial<TicketQueryParams> = {}): Promise<PaginatedTickets> {
+  const response = await api.get<PaginatedTickets>('/api/tickets', { params: { page: 1, limit: 10, sortBy: 'createdAt', sortOrder: 'desc', ...params } });
   return response.data;
 }
 
@@ -213,6 +214,21 @@ export async function addMessage(ticketId: string, data: CreateMessageInput): Pr
 export async function polishReply(data: PolishReplyInput): Promise<{ polishedText: string }> {
   try {
     const response = await api.post<{ polishedText: string }>('/api/tickets/polish', data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      throw new Error(error.response.data.error);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Summarize a ticket and its conversation history using GLM AI
+ */
+export async function summarizeTicket(ticketId: string): Promise<{ summary: string }> {
+  try {
+    const response = await api.post<{ summary: string }>(`/api/tickets/${ticketId}/summarize`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.data?.error) {

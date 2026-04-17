@@ -24,6 +24,7 @@ export interface TicketWithDetails {
   senderName: string;
   emailTo: string;
   assignedToId: string | null;
+  summary: string | null;
   assignedTo: {
     id: string;
     name: string | null;

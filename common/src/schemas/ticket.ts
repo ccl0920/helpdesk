@@ -124,3 +124,12 @@ export const polishReplySchema = z.object({
 });
 
 export type PolishReplyInput = z.infer<typeof polishReplySchema>;
+
+/**
+ * Zod schema for summarizing a ticket
+ */
+export const summarizeTicketSchema = z.object({
+  ticketId: z.string(),
+});
+
+export type SummarizeTicketInput = z.infer<typeof summarizeTicketSchema>;

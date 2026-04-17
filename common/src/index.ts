@@ -38,6 +38,8 @@ export {
   type ListTicketsQuery,
   polishReplySchema,
   type PolishReplyInput,
+  summarizeTicketSchema,
+  type SummarizeTicketInput,
 } from './schemas/ticket';
 
 export {
