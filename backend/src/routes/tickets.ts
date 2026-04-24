@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { generateText, Output } from 'ai';
-import { createZhipu } from 'zhipu-ai-provider';
+import { opencode } from 'ai-sdk-provider-opencode-sdk';
 import { requireAuth } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import {
@@ -202,31 +202,17 @@ router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageS
 
 /**
  * POST /api/tickets/polish
- * Polish an agent's reply using GLM-4.7-Flash
+ * Polish an agent's reply using qwen3.5-plus via OpenCode
  */
 router.post('/tickets/polish', requireAuth, validateRequest(polishReplySchema), async (req: Request, res: Response) => {
   try {
-    const apiKey = process.env.ZHIPU_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({
-        error: 'AI service not configured. Please set ZHIPU_API_KEY in environment variables.',
-      });
-    }
-
     const { originalText, ticketContext } = req.body as z.infer<typeof polishReplySchema>;
 
     const agentName = req.session?.user?.name || req.session?.user?.email || 'Support Agent';
     const customerName = ticketContext?.split('\n')[0]?.replace('Customer: ', '') || 'Customer';
 
-    const zhipuProvider = createZhipu({
-      baseURL: 'https://api.z.ai/api/paas/v4',
-      apiKey,
-    });
-    const zhipuModel = zhipuProvider('glm-4.7-flash');
-
     const { output } = await generateText({
-      model: zhipuModel,
+      model: opencode('qwen3.5-plus'),
       output: Output.json(),
       prompt: `You are a professional customer support agent helping to polish agent replies.
 
@@ -276,18 +262,10 @@ Respond with a JSON object with a single key "polishedText" containing the impro
 
 /**
  * POST /api/tickets/:id/summarize
- * Summarize a ticket and its conversation history using GLM-4.7-Flash
+ * Summarize a ticket and its conversation history using qwen3.5-plus via OpenCode
  */
 router.post('/tickets/:id/summarize', requireAuth, async (req: Request, res: Response) => {
   try {
-    const apiKey = process.env.ZHIPU_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({
-        error: 'AI service not configured. Please set ZHIPU_API_KEY in environment variables.',
-      });
-    }
-
     const { id } = req.params as { id: string };
 
     let bigintId: bigint;
@@ -313,12 +291,6 @@ router.post('/tickets/:id/summarize', requireAuth, async (req: Request, res: Res
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    const zhipuProvider = createZhipu({
-      baseURL: 'https://api.z.ai/api/paas/v4',
-      apiKey,
-    });
-    const zhipuModel = zhipuProvider('glm-4.7-flash');
-
     const conversationHistory = ticket.messages
       .map((msg: { senderType: string; body: string }) => {
         const sender = msg.senderType === 'AGENT' ? 'Agent' : 'Customer';
@@ -342,7 +314,7 @@ ${conversationHistory || 'No messages yet'}
 `.trim();
 
     const { output } = await generateText({
-      model: zhipuModel,
+      model: opencode('qwen3.5-plus'),
       output: Output.text(),
       prompt: `You are a professional customer support AI assistant. Your task is to summarize support tickets concisely.
 
