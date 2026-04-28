@@ -25,7 +25,7 @@ import {
   type TicketWithDetails,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
-import { classifyTicket } from '../lib/classification.js';
+import { enqueueClassifyTicket } from '../lib/queue.js';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
@@ -123,10 +123,10 @@ router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async 
   try {
     const ticket = await createTicket(req.body);
 
-    // Non-blocking automatic classification if no category was provided
+    // Enqueue automatic classification if no category was provided
     if (!ticket.category) {
-      classifyTicket(ticket.id).catch(() => {
-        // Errors are logged inside classifyTicket
+      enqueueClassifyTicket(ticket.id).catch((err) => {
+        console.error(`[TicketsRoute] Failed to enqueue classification for ticket ${ticket.id}:`, err);
       });
     }
 

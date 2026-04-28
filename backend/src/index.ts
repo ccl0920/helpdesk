@@ -9,6 +9,8 @@ import ticketRoutes from './routes/tickets.js';
 import { authLimiter, generalLimiter } from './middleware/rateLimiter.js';
 import { startImapPolling, stopImapPolling } from './services/emailProviders/imapProvider.js';
 import { initWebhookProvider } from './services/emailProviders/webhookProvider.js';
+import { startQueue, stopQueue } from './lib/queue.js';
+import { registerClassificationWorker } from './lib/classification.js';
 
 // Add BigInt serialization support for JSON.stringify
 // This prevents "Do not know how to serialize a BigInt" errors
@@ -136,6 +138,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('🛑 Shutting down...');
+  await stopQueue();
   await stopImapPolling();
   await prisma.$disconnect();
   process.exit(0);
@@ -143,6 +146,7 @@ process.on('SIGINT', async () => {
 
 process.on('SIGTERM', async () => {
   console.log('🛑 Shutting down...');
+  await stopQueue();
   await stopImapPolling();
   await prisma.$disconnect();
   process.exit(0);
@@ -155,6 +159,13 @@ app.listen(PORT, async () => {
     console.log('📦 Database connected');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+  }
+
+  try {
+    await startQueue();
+    registerClassificationWorker();
+  } catch (error) {
+    console.error('❌ Job queue startup failed:', error);
   }
 });
 
