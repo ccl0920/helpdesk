@@ -8,6 +8,7 @@ import {
 } from './ticketService.js';
 import { SenderType } from '@helpdesk/common';
 import prisma from '../lib/prisma.js';
+import { classifyTicket } from '../lib/classification.js';
 
 /**
  * Process incoming raw email and create/update ticket
@@ -106,6 +107,13 @@ export async function processIncomingEmail(rawEmail: string | Buffer): Promise<{
     isNew = true;
   }
 
+  // Non-blocking automatic classification for new tickets
+  if (isNew) {
+    classifyTicket(ticket.id).catch(() => {
+      // Errors are logged inside classifyTicket
+    });
+  }
+
   console.log(`✅ Ticket ${ticket.id} ${isNew ? 'created' : 'updated'} successfully`);
   return { ticket, isNew };
 }
@@ -197,6 +205,13 @@ export async function processParsedEmail(parsedEmail: ParsedEmail): Promise<{
     }
 
     isNew = true;
+  }
+
+  // Non-blocking automatic classification for new tickets
+  if (isNew) {
+    classifyTicket(ticket.id).catch(() => {
+      // Errors are logged inside classifyTicket
+    });
   }
 
   console.log(`✅ Ticket ${ticket.id} ${isNew ? 'created' : 'updated'} successfully`);

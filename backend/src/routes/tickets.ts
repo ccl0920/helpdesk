@@ -25,6 +25,7 @@ import {
   type TicketWithDetails,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
+import { classifyTicket } from '../lib/classification.js';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
@@ -121,6 +122,13 @@ router.get('/tickets/:id', requireAuth, async (req: Request, res: Response) => {
 router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async (req: Request, res: Response) => {
   try {
     const ticket = await createTicket(req.body);
+
+    // Non-blocking automatic classification if no category was provided
+    if (!ticket.category) {
+      classifyTicket(ticket.id).catch(() => {
+        // Errors are logged inside classifyTicket
+      });
+    }
 
     res.status(201).json(ticket);
   } catch (error) {
