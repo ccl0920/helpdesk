@@ -86,11 +86,13 @@ export function UpdateTicket({ ticket, agents }: UpdateTicketProps) {
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              {Object.values(TicketStatus).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {STATUS_CONFIG[status].label}
-                </SelectItem>
-              ))}
+              {Object.values(TicketStatus)
+                .filter((status) => status !== TicketStatus.NEW && status !== TicketStatus.PROCESSING)
+                .map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {STATUS_CONFIG[status].label}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </div>

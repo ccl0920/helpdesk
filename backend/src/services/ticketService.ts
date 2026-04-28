@@ -6,6 +6,7 @@ import {
   TicketStatus,
   TicketCategory,
   SenderType,
+  ResolvedBy,
   VALID_SORT_COLUMNS,
   type SortColumn,
   type SortOrder,
@@ -25,6 +26,7 @@ export interface TicketWithDetails {
   emailTo: string;
   assignedToId: string | null;
   summary: string | null;
+  resolvedBy: ResolvedBy | null;
   assignedTo: {
     id: string;
     name: string | null;
@@ -60,7 +62,7 @@ export interface PaginatedTickets {
  */
 export async function createTicket(
   data: CreateTicketInput,
-  status: TicketStatus = TicketStatus.OPEN
+  status: TicketStatus = TicketStatus.NEW
 ): Promise<TicketWithDetails> {
   const ticket = await prisma.ticket.create({
     data: {
@@ -185,6 +187,9 @@ export async function listTickets(options: {
   if (category) where.category = category;
   if (assignedToId === null) where.assignedToId = null;
   else if (assignedToId) where.assignedToId = assignedToId;
+
+  // Exclude internal pipeline statuses from the agent-facing list
+  where.NOT = { status: { in: [TicketStatus.NEW, TicketStatus.PROCESSING] } };
 
   // Get total count
   const total = await prisma.ticket.count({ where });

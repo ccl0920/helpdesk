@@ -31,10 +31,12 @@ function formatEnumValue(value: string): string {
     .join(' ');
 }
 
-const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = Object.values(TicketStatus).map((status) => ({
-  value: status,
-  label: formatEnumValue(status),
-}));
+const STATUS_OPTIONS: { value: TicketStatus; label: string }[] = Object.values(TicketStatus)
+  .filter((status) => status !== TicketStatus.NEW && status !== TicketStatus.PROCESSING)
+  .map((status) => ({
+    value: status,
+    label: formatEnumValue(status),
+  }));
 
 const CATEGORY_OPTIONS: { value: TicketCategory; label: string }[] = Object.values(TicketCategory).map((category) => ({
   value: category,

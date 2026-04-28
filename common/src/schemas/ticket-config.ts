@@ -1,6 +1,8 @@
 import { TicketStatus, TicketCategory } from './ticket';
 
 export const STATUS_CONFIG: Record<TicketStatus, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  [TicketStatus.NEW]: { label: 'New', variant: 'default' },
+  [TicketStatus.PROCESSING]: { label: 'Processing', variant: 'secondary' },
   [TicketStatus.OPEN]: { label: 'Open', variant: 'default' },
   [TicketStatus.RESOLVED]: { label: 'Resolved', variant: 'outline' },
   [TicketStatus.CLOSED]: { label: 'Closed', variant: 'secondary' },

@@ -18,6 +18,7 @@ export async function classifyTicket(ticketId: bigint): Promise<void> {
       subject: true,
       description: true,
       category: true,
+      status: true,
     },
   });
 
@@ -26,9 +27,14 @@ export async function classifyTicket(ticketId: bigint): Promise<void> {
     return;
   }
 
-  // Skip if already categorized
+  // Skip if already categorized or currently being auto-resolved
   if (ticket.category) {
     console.log(`[Classification] Ticket ${ticketId} already categorized as ${ticket.category}, skipping`);
+    return;
+  }
+
+  if (ticket.status === 'PROCESSING') {
+    console.log(`[Classification] Ticket ${ticketId} is being auto-resolved, skipping classification`);
     return;
   }
 

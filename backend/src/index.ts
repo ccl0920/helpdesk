@@ -11,6 +11,7 @@ import { startImapPolling, stopImapPolling } from './services/emailProviders/ima
 import { initWebhookProvider } from './services/emailProviders/webhookProvider.js';
 import { startQueue, stopQueue } from './lib/queue.js';
 import { registerClassificationWorker } from './lib/classification.js';
+import { registerAutoResolutionWorker } from './lib/autoResolution.js';
 
 // Add BigInt serialization support for JSON.stringify
 // This prevents "Do not know how to serialize a BigInt" errors
@@ -164,6 +165,7 @@ app.listen(PORT, async () => {
   try {
     await startQueue();
     registerClassificationWorker();
+    registerAutoResolutionWorker();
   } catch (error) {
     console.error('❌ Job queue startup failed:', error);
   }

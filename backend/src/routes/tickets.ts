@@ -25,7 +25,7 @@ import {
   type TicketWithDetails,
 } from '../services/ticketService.js';
 import { handleWebhook } from '../services/emailProviders/webhookProvider.js';
-import { enqueueClassifyTicket } from '../lib/queue.js';
+import { enqueueClassifyTicket, enqueueAutoResolveTicket } from '../lib/queue.js';
 import prisma from '../lib/prisma.js';
 
 const router = Router();
@@ -121,7 +121,8 @@ router.get('/tickets/:id', requireAuth, async (req: Request, res: Response) => {
  */
 router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async (req: Request, res: Response) => {
   try {
-    const ticket = await createTicket(req.body);
+    const { status, ...ticketData } = req.body;
+    const ticket = await createTicket(ticketData, status);
 
     // Enqueue automatic classification if no category was provided
     if (!ticket.category) {
@@ -129,6 +130,11 @@ router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async 
         console.error(`[TicketsRoute] Failed to enqueue classification for ticket ${ticket.id}:`, err);
       });
     }
+
+    // Enqueue auto-resolution for manually created tickets
+    enqueueAutoResolveTicket(ticket.id).catch((err) => {
+      console.error(`[TicketsRoute] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
+    });
 
     res.status(201).json(ticket);
   } catch (error) {

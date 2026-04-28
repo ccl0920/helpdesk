@@ -78,6 +78,7 @@ async function createTestTicket(request: any, cookies: string[], subject: string
       emailFrom: 'test@example.com',
       senderName: 'Test User',
       emailTo: 'support@helpdesk.com',
+      status: 'OPEN',
     },
     headers: {
       ...buildCookieHeader(cookies),

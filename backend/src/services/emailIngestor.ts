@@ -8,7 +8,7 @@ import {
 } from './ticketService.js';
 import { SenderType } from '@helpdesk/common';
 import prisma from '../lib/prisma.js';
-import { enqueueClassifyTicket } from '../lib/queue.js';
+import { enqueueClassifyTicket, enqueueAutoResolveTicket } from '../lib/queue.js';
 
 /**
  * Process incoming raw email and create/update ticket
@@ -107,10 +107,13 @@ export async function processIncomingEmail(rawEmail: string | Buffer): Promise<{
     isNew = true;
   }
 
-  // Enqueue automatic classification for new tickets
+  // Enqueue automatic classification and auto-resolution for new tickets
   if (isNew) {
     enqueueClassifyTicket(ticket.id).catch((err) => {
       console.error(`[EmailIngestor] Failed to enqueue classification for ticket ${ticket.id}:`, err);
+    });
+    enqueueAutoResolveTicket(ticket.id).catch((err) => {
+      console.error(`[EmailIngestor] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
     });
   }
 
@@ -207,10 +210,13 @@ export async function processParsedEmail(parsedEmail: ParsedEmail): Promise<{
     isNew = true;
   }
 
-  // Enqueue automatic classification for new tickets
+  // Enqueue automatic classification and auto-resolution for new tickets
   if (isNew) {
     enqueueClassifyTicket(ticket.id).catch((err) => {
       console.error(`[EmailIngestor] Failed to enqueue classification for ticket ${ticket.id}:`, err);
+    });
+    enqueueAutoResolveTicket(ticket.id).catch((err) => {
+      console.error(`[EmailIngestor] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
     });
   }
 

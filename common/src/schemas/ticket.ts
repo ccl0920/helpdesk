@@ -4,9 +4,19 @@ import { z } from 'zod';
  * TicketStatus enum values (matches Prisma schema)
  */
 export enum TicketStatus {
+  NEW = 'NEW',
+  PROCESSING = 'PROCESSING',
   OPEN = 'OPEN',
   RESOLVED = 'RESOLVED',
   CLOSED = 'CLOSED',
+}
+
+/**
+ * ResolvedBy enum values (matches Prisma schema)
+ */
+export enum ResolvedBy {
+  AI = 'AI',
+  AGENT = 'AGENT',
 }
 
 /**
@@ -33,7 +43,7 @@ export const ticketSubjectField = z.string().trim().min(1, 'Subject is required'
 export const ticketDescriptionField = z.string().trim().min(1, 'Description is required');
 export const ticketEmailField = z.string().email('Invalid email format');
 export const ticketSenderNameField = z.string().trim().min(1, 'Sender name is required');
-export const ticketStatusField = z.nativeEnum(TicketStatus, { message: 'Status must be OPEN, RESOLVED, or CLOSED' });
+export const ticketStatusField = z.nativeEnum(TicketStatus, { message: 'Status must be NEW, PROCESSING, OPEN, RESOLVED, or CLOSED' });
 export const ticketCategoryField = z.nativeEnum(TicketCategory, { message: 'Invalid category' }).nullable().optional();
 
 /**
@@ -47,6 +57,7 @@ export const createTicketSchema = z.object({
   senderName: ticketSenderNameField,
   emailTo: ticketEmailField,
   category: ticketCategoryField,
+  status: ticketStatusField.optional(),
 });
 
 /**

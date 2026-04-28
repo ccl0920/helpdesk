@@ -17,9 +17,16 @@ enum Role {
 }
 
 enum TicketStatus {
+  NEW
+  PROCESSING
   OPEN
   RESOLVED
   CLOSED
+}
+
+enum ResolvedBy {
+  AI
+  AGENT
 }
 
 enum TicketCategory {
@@ -108,8 +115,9 @@ model Ticket {
   id          BigInt          @id @default(autoincrement())
   subject     String
   description String          @db.Text
-  status      TicketStatus    @default(OPEN)
+  status      TicketStatus    @default(NEW)
   category    TicketCategory?
+  resolvedBy  ResolvedBy?
   emailFrom   String
   senderName  String
   emailTo     String
