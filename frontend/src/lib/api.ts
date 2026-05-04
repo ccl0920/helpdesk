@@ -237,3 +237,28 @@ export async function summarizeTicket(ticketId: string): Promise<{ summary: stri
     throw error;
   }
 }
+
+export interface TicketsPerDay {
+  date: string;
+  count: number;
+}
+
+/**
+ * Dashboard stats response
+ */
+export interface DashboardStats {
+  total: number;
+  open: number;
+  aiResolved: number;
+  percentAiResolved: number;
+  avgResolutionTimeHours: number | null;
+  ticketsPerDay: TicketsPerDay[];
+}
+
+/**
+ * Fetch dashboard statistics
+ */
+export async function fetchDashboardStats(): Promise<DashboardStats> {
+  const response = await api.get<DashboardStats>('/api/dashboard/stats');
+  return response.data;
+}

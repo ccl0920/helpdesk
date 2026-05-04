@@ -6,6 +6,7 @@ import prisma from './lib/prisma.js';
 import authRoutes from './routes/auth.js';
 import adminRoutes from './routes/admin.js';
 import ticketRoutes from './routes/tickets.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { authLimiter, generalLimiter } from './middleware/rateLimiter.js';
 import { startImapPolling, stopImapPolling } from './services/emailProviders/imapProvider.js';
 import { initWebhookProvider } from './services/emailProviders/webhookProvider.js';
@@ -105,6 +106,9 @@ app.use('/api/admin', adminRoutes);
 
 // Ticket routes (protected by requireAuth middleware)
 app.use('/api', ticketRoutes);
+
+// Dashboard routes (protected by requireAuth middleware)
+app.use('/api', dashboardRoutes);
 
 // Health check (rate limited)
 app.get('/api/health', generalLimiter, async (req, res) => {
