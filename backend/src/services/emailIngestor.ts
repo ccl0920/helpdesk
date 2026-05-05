@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { parseEmail, type ParsedEmail } from '../lib/emailParser.js';
 import {
   createTicket,
@@ -110,10 +111,16 @@ export async function processIncomingEmail(rawEmail: string | Buffer): Promise<{
   // Enqueue automatic classification and auto-resolution for new tickets
   if (isNew) {
     enqueueClassifyTicket(ticket.id).catch((err) => {
-      console.error(`[EmailIngestor] Failed to enqueue classification for ticket ${ticket.id}:`, err);
+      Sentry.captureException(err, {
+        tags: { component: 'email-ingestor', action: 'enqueue-classification' },
+        extra: { ticketId: ticket.id.toString(), emailFrom: parsedEmail.from },
+      });
     });
     enqueueAutoResolveTicket(ticket.id).catch((err) => {
-      console.error(`[EmailIngestor] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
+      Sentry.captureException(err, {
+        tags: { component: 'email-ingestor', action: 'enqueue-auto-resolution' },
+        extra: { ticketId: ticket.id.toString(), emailFrom: parsedEmail.from },
+      });
     });
   }
 
@@ -213,10 +220,16 @@ export async function processParsedEmail(parsedEmail: ParsedEmail): Promise<{
   // Enqueue automatic classification and auto-resolution for new tickets
   if (isNew) {
     enqueueClassifyTicket(ticket.id).catch((err) => {
-      console.error(`[EmailIngestor] Failed to enqueue classification for ticket ${ticket.id}:`, err);
+      Sentry.captureException(err, {
+        tags: { component: 'email-ingestor', action: 'enqueue-classification' },
+        extra: { ticketId: ticket.id.toString(), emailFrom: parsedEmail.from },
+      });
     });
     enqueueAutoResolveTicket(ticket.id).catch((err) => {
-      console.error(`[EmailIngestor] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
+      Sentry.captureException(err, {
+        tags: { component: 'email-ingestor', action: 'enqueue-auto-resolution' },
+        extra: { ticketId: ticket.id.toString(), emailFrom: parsedEmail.from },
+      });
     });
   }
 

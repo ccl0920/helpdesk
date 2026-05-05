@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { Request, Response } from 'express';
 import { processIncomingEmail, processParsedEmail } from '../emailIngestor.js';
 import crypto from 'crypto';
@@ -52,7 +53,11 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
     if (config.secret) {
       const isValid = validateWebhookSignature(req, config.secret);
       if (!isValid) {
-        console.error('❌ Webhook signature validation failed');
+        Sentry.withScope((scope) => {
+          scope.setTag('component', 'webhook-provider');
+          scope.setContext('request', { remoteAddress: req.ip, userAgent: req.headers['user-agent'] });
+          Sentry.captureMessage('Webhook signature validation failed', 'error');
+        });
         res.status(401).json({ error: 'Invalid webhook signature' });
         return;
       }
@@ -121,7 +126,14 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
       result = await processParsedEmail(parsedEmail);
     }
     else {
-      console.error('❌ Unsupported webhook payload format');
+      Sentry.withScope((scope) => {
+        scope.setTag('component', 'webhook-provider');
+        scope.setContext('payload', {
+          bodyKeys: Object.keys(req.body || {}),
+          contentType: req.headers['content-type'],
+        });
+        Sentry.captureMessage('Unsupported webhook payload format received', 'error');
+      });
       res.status(400).json({
         error: 'Unsupported payload format',
         hint: 'Provide raw MIME in `raw` or `body-mime` field, or parsed fields: from, to, subject, body',
@@ -143,7 +155,13 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
     });
 
   } catch (error) {
-    console.error('❌ Webhook processing error:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'webhook-provider', action: 'process-webhook' },
+      extra: {
+        bodyKeys: Object.keys(req.body || {}),
+        contentType: req.headers['content-type'],
+      },
+    });
     res.status(500).json({
       error: 'Failed to process webhook',
       details: error instanceof Error ? error.message : 'Unknown error',

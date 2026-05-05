@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { generateText, Output } from 'ai';
 import { opencode } from 'ai-sdk-provider-opencode-sdk';
 import prisma from './prisma.js';
@@ -97,9 +98,12 @@ export function registerClassificationWorker(): void {
       } catch (error: any) {
         const message = error?.message || '';
         if (message.includes('rate limit') || message.includes('Rate limit')) {
-          console.warn(`[Classification] Rate limit hit for ticket ${ticketId}`);
+          Sentry.captureMessage(`Classification rate limit hit for ticket ${ticketId}`, 'warning');
         } else {
-          console.error(`[Classification] Failed to classify ticket ${ticketId}:`, error);
+          Sentry.captureException(error, {
+            tags: { component: 'classification', action: 'worker-job' },
+            extra: { ticketId: ticketId.toString() },
+          });
         }
         // Re-throw so pg-boss can retry the job
         throw error;

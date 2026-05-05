@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import Imap from 'imap';
 import { simpleParser } from 'mailparser';
 import { processIncomingEmail } from '../emailIngestor.js';
@@ -60,8 +61,13 @@ export function startImapPolling(config: ImapConfig): void {
   });
 
   imapConnection.on('error', (err: Error) => {
-    console.error('❌ IMAP connection error:', err.message);
-    
+    Sentry.withScope((scope) => {
+      scope.setTag('component', 'imap-provider');
+      scope.setTag('action', 'connection-error');
+      scope.setContext('imap', { host: config.host, user: config.user });
+      Sentry.captureMessage(`IMAP connection error: ${err.message}`, 'error');
+    });
+
     // Attempt reconnect after error
     if (isRunning) {
       console.log('🔄 Attempting IMAP reconnect...');
@@ -128,8 +134,11 @@ async function openMailboxAndPoll(mailbox: string, interval: number): Promise<vo
     }, interval);
 
   } catch (error) {
-    console.error('❌ Failed to open mailbox:', error);
-    
+    Sentry.captureException(error, {
+      tags: { component: 'imap-provider', action: 'open-mailbox' },
+      extra: { mailbox },
+    });
+
     // Retry after delay
     if (isRunning) {
       setTimeout(() => openMailboxAndPoll(mailbox, interval), 5000);
@@ -184,13 +193,18 @@ async function pollMailbox(mailbox: string): Promise<void> {
         await fetchAndProcessMessage(uid);
         processedUids.add(uid);
       } catch (error) {
-        console.error(`❌ Failed to process message UID ${uid}:`, error);
+        Sentry.captureException(error, {
+          tags: { component: 'imap-provider', action: 'process-message' },
+          extra: { messageUid: uid },
+        });
         // Don't add to processedUids, retry next time
       }
     }
 
   } catch (error) {
-    console.error('❌ Error polling mailbox:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'imap-provider', action: 'poll-mailbox' },
+    });
   }
 }
 

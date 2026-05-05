@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import * as Sentry from '@sentry/node';
 import { z } from 'zod';
 import { generateText, Output } from 'ai';
 import { opencode } from 'ai-sdk-provider-opencode-sdk';
@@ -48,7 +49,7 @@ router.get(
   '/tickets',
   requireAuth,
   validateRequest(listTicketsQuerySchema, 'query'),
-  async (req: Request, res: Response) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const {
         page,
@@ -74,11 +75,8 @@ router.get(
 
       res.json(result);
     } catch (error) {
-      console.error('Error listing tickets:', error);
-      res.status(500).json({
-        error: 'Failed to list tickets',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      });
+      const msg = error instanceof Error ? error.message : String(error);
+      next(new Error(`Failed to list tickets: ${msg}`, { cause: error }));
     }
   }
 );
@@ -87,7 +85,7 @@ router.get(
  * GET /api/tickets/:id
  * Get a single ticket with full details and message thread
  */
-router.get('/tickets/:id', requireAuth, async (req: Request, res: Response) => {
+router.get('/tickets/:id', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -107,11 +105,8 @@ router.get('/tickets/:id', requireAuth, async (req: Request, res: Response) => {
 
     res.json(ticket);
   } catch (error) {
-    console.error('Error getting ticket:', error);
-    res.status(500).json({
-      error: 'Failed to get ticket',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to get ticket ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 
@@ -119,7 +114,7 @@ router.get('/tickets/:id', requireAuth, async (req: Request, res: Response) => {
  * POST /api/tickets
  * Create a new ticket manually
  */
-router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async (req: Request, res: Response) => {
+router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, ...ticketData } = req.body;
     const ticket = await createTicket(ticketData, status);
@@ -127,22 +122,25 @@ router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async 
     // Enqueue automatic classification if no category was provided
     if (!ticket.category) {
       enqueueClassifyTicket(ticket.id).catch((err) => {
-        console.error(`[TicketsRoute] Failed to enqueue classification for ticket ${ticket.id}:`, err);
+        Sentry.captureException(err, {
+          tags: { component: 'ticket-route', action: 'enqueue-classification' },
+          extra: { ticketId: ticket.id.toString() },
+        });
       });
     }
 
     // Enqueue auto-resolution for manually created tickets
     enqueueAutoResolveTicket(ticket.id).catch((err) => {
-      console.error(`[TicketsRoute] Failed to enqueue auto-resolution for ticket ${ticket.id}:`, err);
+      Sentry.captureException(err, {
+        tags: { component: 'ticket-route', action: 'enqueue-auto-resolution' },
+        extra: { ticketId: ticket.id.toString() },
+      });
     });
 
     res.status(201).json(ticket);
   } catch (error) {
-    console.error('Error creating ticket:', error);
-    res.status(500).json({
-      error: 'Failed to create ticket',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to create ticket: ${msg}`, { cause: error }));
   }
 });
 
@@ -150,7 +148,7 @@ router.post('/tickets', requireAuth, validateRequest(createTicketSchema), async 
  * PUT /api/tickets/:id
  * Update ticket status, category, or assignee
  */
-router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), async (req: Request, res: Response) => {
+router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
     const data: UpdateTicketInput = req.body;
@@ -185,11 +183,8 @@ router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), asy
       return res.status(404).json({ error: 'Ticket not found' });
     }
 
-    console.error('Error updating ticket:', error);
-    res.status(500).json({
-      error: 'Failed to update ticket',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to update ticket ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 
@@ -197,7 +192,7 @@ router.put('/tickets/:id', requireAuth, validateRequest(updateTicketSchema), asy
  * POST /api/tickets/:id/messages
  * Add a message to a ticket
  */
-router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageSchema), async (req: Request, res: Response) => {
+router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
     const data: CreateMessageInput = req.body;
@@ -206,11 +201,8 @@ router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageS
 
     res.status(201).json(ticket);
   } catch (error) {
-    console.error('Error adding message:', error);
-    res.status(500).json({
-      error: 'Failed to add message',
-      details: error instanceof Error ? error.message : 'Unknown error',
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to add message to ticket ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 
@@ -218,7 +210,7 @@ router.post('/tickets/:id/messages', requireAuth, validateRequest(createMessageS
  * POST /api/tickets/polish
  * Polish an agent's reply using qwen3.5-plus via OpenCode
  */
-router.post('/tickets/polish', requireAuth, validateRequest(polishReplySchema), async (req: Request, res: Response) => {
+router.post('/tickets/polish', requireAuth, validateRequest(polishReplySchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { originalText, ticketContext } = req.body as z.infer<typeof polishReplySchema>;
 
@@ -257,8 +249,6 @@ Respond with a JSON object with a single key "polishedText" containing the impro
 
     res.json({ polishedText });
   } catch (error: any) {
-    console.error('Error polishing reply:', error);
-
     const errorMessage = error.message || '';
     if (errorMessage.includes('rate limit') || errorMessage.includes('Rate limit')) {
       return res.status(429).json({
@@ -267,10 +257,8 @@ Respond with a JSON object with a single key "polishedText" containing the impro
       });
     }
 
-    res.status(500).json({
-      error: 'Failed to polish reply',
-      details: errorMessage,
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to polish reply: ${msg}`, { cause: error }));
   }
 });
 
@@ -278,7 +266,7 @@ Respond with a JSON object with a single key "polishedText" containing the impro
  * POST /api/tickets/:id/summarize
  * Summarize a ticket and its conversation history using qwen3.5-plus via OpenCode
  */
-router.post('/tickets/:id/summarize', requireAuth, async (req: Request, res: Response) => {
+router.post('/tickets/:id/summarize', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
 
@@ -350,8 +338,6 @@ ${context}`,
 
     res.json({ summary: updatedTicket.summary });
   } catch (error: any) {
-    console.error('Error summarizing ticket:', error);
-
     const errorMessage = error.message || '';
     if (errorMessage.includes('rate limit') || errorMessage.includes('Rate limit')) {
       return res.status(429).json({
@@ -360,10 +346,8 @@ ${context}`,
       });
     }
 
-    res.status(500).json({
-      error: 'Failed to summarize ticket',
-      details: errorMessage,
-    });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to summarize ticket ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 

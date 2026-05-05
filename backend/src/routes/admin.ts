@@ -1,4 +1,4 @@
-import { Router, Request } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { requireAdmin } from '../middleware/auth.js';
 import { validateRequest } from '../middleware/validate.js';
 import prisma, { Role } from '../lib/prisma.js';
@@ -15,7 +15,7 @@ router.use(requireAdmin);
  * PUT /api/admin/users/:id
  * Update a user (admin only)
  */
-router.put('/users/:id', validateRequest(updateUserSchema), async (req, res) => {
+router.put('/users/:id', validateRequest(updateUserSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
     const { name, email, password, role } = req.body as { name: string; email: string; password?: string; role: Role };
@@ -81,8 +81,8 @@ router.put('/users/:id', validateRequest(updateUserSchema), async (req, res) => 
 
     res.json(updatedUser);
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to update user ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 
@@ -90,7 +90,7 @@ router.put('/users/:id', validateRequest(updateUserSchema), async (req, res) => 
  * POST /api/admin/users
  * Create a new user (admin only)
  */
-router.post('/users', validateRequest(createUserSchema), async (req, res) => {
+router.post('/users', validateRequest(createUserSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { name, email, password, role } = req.body as { name: string; email: string; password: string; role: Role };
 
@@ -142,8 +142,8 @@ router.post('/users', validateRequest(createUserSchema), async (req, res) => {
 
     res.status(201).json(newUser);
   } catch (error) {
-    console.error('Error creating user:', error);
-    res.status(500).json({ error: 'Failed to create user' });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to create user: ${msg}`, { cause: error }));
   }
 });
 
@@ -151,7 +151,7 @@ router.post('/users', validateRequest(createUserSchema), async (req, res) => {
  * GET /api/admin/users
  * List all users (admin only)
  */
-router.get('/users', async (req, res) => {
+router.get('/users', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const users = await prisma.user.findMany({
       where: {
@@ -168,8 +168,8 @@ router.get('/users', async (req, res) => {
     });
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to list users: ${msg}`, { cause: error }));
   }
 });
 
@@ -177,7 +177,7 @@ router.get('/users', async (req, res) => {
  * PUT /api/admin/users/:id/role
  * Update user role (admin only)
  */
-router.put('/users/:id/role', validateRequest(updateRoleSchema), async (req, res) => {
+router.put('/users/:id/role', validateRequest(updateRoleSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params as { id: string };
     const { role } = req.body as { role: Role };
@@ -195,8 +195,8 @@ router.put('/users/:id/role', validateRequest(updateRoleSchema), async (req, res
 
     res.json(user);
   } catch (error) {
-    console.error('Error updating user role:', error);
-    res.status(500).json({ error: 'Failed to update user role' });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to update role for user ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 
@@ -205,9 +205,9 @@ router.put('/users/:id/role', validateRequest(updateRoleSchema), async (req, res
  * Soft delete a user (admin only)
  * Admin users cannot be deleted
  */
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params as { id: string };
 
     // Type assertion: session is guaranteed by requireAdmin middleware
     const session = (req as Request & { session?: typeof auth.$Infer.Session }).session;
@@ -256,8 +256,8 @@ router.delete('/users/:id', async (req, res) => {
 
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
+    const msg = error instanceof Error ? error.message : String(error);
+    next(new Error(`Failed to delete user ${req.params.id}: ${msg}`, { cause: error }));
   }
 });
 

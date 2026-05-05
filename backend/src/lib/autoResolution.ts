@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { generateText, Output } from 'ai';
 import { opencode } from 'ai-sdk-provider-opencode-sdk';
 import { readFileSync } from 'fs';
@@ -15,7 +16,10 @@ let knowledgeBaseContent: string;
 try {
   knowledgeBaseContent = readFileSync(KB_PATH, 'utf-8');
 } catch (error) {
-  console.error('[AutoResolve] Failed to load knowledge base:', error);
+  Sentry.captureException(error, {
+    tags: { component: 'auto-resolution', action: 'load-knowledge-base' },
+    extra: { knowledgeBasePath: KB_PATH },
+  });
   knowledgeBaseContent = '';
 }
 
@@ -150,7 +154,10 @@ Description: ${ticket.description}
 
     console.log(`[AutoResolve] Ticket ${ticketId} auto-resolved with confidence ${result.confidence}`);
   } catch (error: any) {
-    console.error(`[AutoResolve] Error processing ticket ${ticketId}:`, error);
+    Sentry.captureException(error, {
+      tags: { component: 'auto-resolution', action: 'process-ticket' },
+      extra: { ticketId: ticketId.toString() },
+    });
     // On error, move to OPEN so it doesn't get stuck in PROCESSING
     await prisma.ticket.update({
       where: { id: ticketId },
@@ -205,9 +212,12 @@ export function registerAutoResolutionWorker(): void {
       } catch (error: any) {
         const message = error?.message || '';
         if (message.includes('rate limit') || message.includes('Rate limit')) {
-          console.warn(`[AutoResolve] Rate limit hit for ticket ${ticketId}`);
+          Sentry.captureMessage(`Auto-resolution rate limit hit for ticket ${ticketId}`, 'warning');
         } else {
-          console.error(`[AutoResolve] Failed to auto-resolve ticket ${ticketId}:`, error);
+          Sentry.captureException(error, {
+            tags: { component: 'auto-resolution', action: 'worker-job' },
+            extra: { ticketId: ticketId.toString() },
+          });
         }
         // Re-throw so pg-boss can retry the job
         throw error;

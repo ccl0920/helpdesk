@@ -1,3 +1,5 @@
+import './instrument.js';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -126,16 +128,32 @@ app.get('/api', generalLimiter, (req, res) => {
 });
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  // Log full error for debugging
-  console.error('Error:', err.message);
-  console.error('Stack:', err.stack);
+app.use(async (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  // Send to Sentry and flush to ensure delivery
+  let eventId: string | undefined;
+  if (process.env.SENTRY_DSN) {
+    Sentry.withScope((scope) => {
+      scope.setContext('request', {
+        url: req.url,
+        method: req.method,
+        headers: req.headers,
+      });
+      eventId = Sentry.captureException(err);
+    });
+
+    try {
+      await Sentry.flush(2000);
+    } catch (flushErr: any) {
+      Sentry.captureMessage('Sentry flush failed in error handler', 'error');
+    }
+  }
 
   // Return generic error in production, details in development
   const isProduction = process.env.NODE_ENV === 'production';
 
   res.status(500).json({
     error: 'Internal server error',
+    sentryEventId: eventId,
     ...(isProduction ? {} : { details: err.message }),
   });
 });
@@ -163,7 +181,10 @@ app.listen(PORT, async () => {
     await prisma.$connect();
     console.log('📦 Database connected');
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'database' },
+      extra: { phase: 'startup' },
+    });
   }
 
   try {
@@ -171,7 +192,10 @@ app.listen(PORT, async () => {
     registerClassificationWorker();
     registerAutoResolutionWorker();
   } catch (error) {
-    console.error('❌ Job queue startup failed:', error);
+    Sentry.captureException(error, {
+      tags: { component: 'job-queue' },
+      extra: { phase: 'startup' },
+    });
   }
 });
 

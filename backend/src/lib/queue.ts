@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/node';
 import { PgBoss } from 'pg-boss';
 
 const connectionString = process.env.DATABASE_URL;
@@ -12,7 +13,9 @@ export const AUTO_RESOLVE_TICKET_QUEUE = 'ticket-auto-resolution';
 export const boss = new PgBoss(connectionString);
 
 boss.on('error', (error: Error) => {
-  console.error('[PgBoss] Error:', error);
+  Sentry.captureException(error, {
+    tags: { component: 'job-queue', action: 'pg-boss-error' },
+  });
 });
 
 /**
