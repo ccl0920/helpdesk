@@ -11,10 +11,10 @@ export function BackButton({ onBack }: BackButtonProps) {
       variant="ghost"
       size="sm"
       onClick={onBack}
-      className="-ml-2"
+      className="gap-2 rounded-full -ml-2 text-muted-foreground hover:text-foreground"
     >
-      <ArrowLeft className="mr-2 h-4 w-4" />
-      Back
+      <ArrowLeft className="h-4 w-4" />
+      Back to tickets
     </Button>
   );
 }

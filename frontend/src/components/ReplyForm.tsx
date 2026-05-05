@@ -82,9 +82,9 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="border-0 shadow-soft">
       <CardHeader>
-        <CardTitle>Reply to Customer</CardTitle>
+        <CardTitle className="text-lg font-heading">Reply to Customer</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -108,7 +108,7 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
           </div>
 
           {addMessageMutation.isError && (
-            <p className="text-sm text-destructive">
+            <p className="text-sm text-coral-600 font-medium">
               {addMessageMutation.error instanceof Error
                 ? addMessageMutation.error.message
                 : 'Failed to send reply. Please try again.'}
@@ -116,20 +116,20 @@ export function ReplyForm({ ticket }: ReplyFormProps) {
           )}
 
           {polishMutation.isError && (
-            <p className="text-sm text-destructive">
+            <p className="text-sm text-coral-600 font-medium">
               {polishMutation.error instanceof Error
                 ? polishMutation.error.message
                 : 'Failed to polish reply. Please try again.'}
             </p>
           )}
 
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-3">
             <Button
               type="button"
               variant="outline"
               disabled={!bodyValue.trim() || polishMutation.isPending}
               onClick={handlePolish}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 rounded-full border-border/80"
             >
               {polishMutation.isPending ? (
                 <>

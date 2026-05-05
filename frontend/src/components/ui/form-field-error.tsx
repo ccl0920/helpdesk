@@ -11,5 +11,5 @@ interface FormFieldErrorProps {
 export function FormFieldError({ error }: FormFieldErrorProps) {
   if (!error) return null;
 
-  return <p className="text-sm text-destructive mt-1">{error.message}</p>;
+  return <p className="text-sm text-coral-600 mt-1.5 font-medium">{error.message}</p>;
 }

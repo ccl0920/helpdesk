@@ -18,7 +18,7 @@ export function LinkButton({ to, children, className }: LinkButtonProps) {
     <button
       onClick={() => navigate(to)}
       className={cn(
-        'text-left hover:underline cursor-pointer bg-transparent border-0 p-0',
+        'text-left font-medium text-foreground hover:text-primary hover:underline cursor-pointer bg-transparent border-0 p-0 transition-colors duration-200',
         className
       )}
     >

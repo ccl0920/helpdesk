@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LayoutDashboard } from 'lucide-react';
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -43,24 +44,29 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-body">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h1 className="text-center text-3xl font-bold tracking-tight text-foreground">
-          Helpdesk
+        <div className="flex justify-center mb-6">
+          <div className="flex items-center justify-center size-14 rounded-2xl bg-primary text-primary-foreground shadow-soft">
+            <LayoutDashboard className="size-7" />
+          </div>
+        </div>
+        <h1 className="text-center font-heading text-3xl font-bold tracking-tight text-foreground">
+          Welcome to Helpdesk
         </h1>
-        <h2 className="mt-2 text-center text-xl font-semibold text-muted-foreground">
-          Sign in to your account
+        <h2 className="mt-2 text-center text-base font-medium text-muted-foreground">
+          Sign in to manage your support tickets
         </h2>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <Card>
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
+        <Card className="border-0 shadow-soft-lg">
+          <CardHeader className="pb-4">
+            <CardTitle className="font-heading text-lg">Sign In</CardTitle>
             <CardDescription>Enter your credentials to access your account</CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <form className="space-y-5" onSubmit={handleSubmit(onSubmit)} noValidate>
               {errors.root && (
                 <Alert variant="destructive">
                   <AlertDescription>{errors.root.message}</AlertDescription>
@@ -78,7 +84,7 @@ export function LoginPage() {
                   placeholder="you@example.com"
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? 'email-error' : undefined}
-                  className={errors.email ? 'border-destructive' : ''}
+                  className={errors.email ? 'border-coral-300 ring-3 ring-coral-500/15' : ''}
                 />
                 {errors.email && (
                   <Alert variant="destructive">
@@ -95,7 +101,7 @@ export function LoginPage() {
                   autoComplete="current-password"
                   disabled={isSubmitting}
                   {...register('password')}
-                  className={errors.password ? 'border-destructive' : ''}
+                  className={errors.password ? 'border-coral-300 ring-3 ring-coral-500/15' : ''}
                   aria-invalid={!!errors.password}
                   aria-describedby={errors.password ? 'password-error' : undefined}
                 />
@@ -119,20 +125,20 @@ export function LoginPage() {
             </form>
 
             {import.meta.env.DEV && (
-              <div className="mt-6">
+              <div className="mt-8">
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-border" />
+                    <div className="w-full border-t border-border/60" />
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="bg-card px-2 text-muted-foreground">
+                    <span className="bg-card px-3 text-muted-foreground font-medium">
                       Demo credentials
                     </span>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-muted-foreground">
                   <p>Use the seeded admin account:</p>
-                  <p className="mt-1 font-mono text-xs bg-muted p-2 rounded">
+                  <p className="mt-2 font-mono text-xs bg-secondary/60 p-3 rounded-xl">
                     Email: admin@example.com<br />
                     Password: password
                   </p>

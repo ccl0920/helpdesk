@@ -45,12 +45,12 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-28" /></TableCell>
-              <TableCell><Skeleton className="h-8 w-16" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-32 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-24 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-28 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-8 w-16 rounded-lg" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -73,7 +73,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
       <TableBody>
         {users.map((user) => (
           <TableRow key={user.id}>
-            <TableCell className="font-medium">{user.email}</TableCell>
+            <TableCell className="font-medium text-foreground">{user.email}</TableCell>
             <TableCell>{user.name || '-'}</TableCell>
             <TableCell>
               <Badge variant={user.role === Role.ADMIN ? 'default' : 'secondary'}>
@@ -82,11 +82,11 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
             </TableCell>
             <TableCell>
               {user.emailVerified ? (
-                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                <Badge variant="teal" className="text-xs">
                   Verified
                 </Badge>
               ) : (
-                <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                <Badge variant="outline" className="text-xs">
                   Pending
                 </Badge>
               )}
@@ -102,6 +102,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
                     size="icon"
                     onClick={() => onEdit(user)}
                     aria-label={`Edit ${user.name || user.email}`}
+                    className="rounded-full text-muted-foreground hover:text-foreground"
                   >
                     <PencilIcon className="w-4 h-4" />
                   </Button>
@@ -112,7 +113,7 @@ export function UserTable({ users, isLoading, onEdit, onDelete }: UserTableProps
                     size="icon"
                     onClick={() => onDelete(user)}
                     aria-label={`Delete ${user.name || user.email}`}
-                    className="text-destructive hover:text-destructive"
+                    className="rounded-full text-coral-500 hover:text-coral-600 hover:bg-coral-50"
                   >
                     <Trash2Icon className="w-4 h-4" />
                   </Button>

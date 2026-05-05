@@ -32,7 +32,7 @@ export function TicketDetailPage() {
 
   if (error || !ticket) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-up">
         <BackButton onBack={() => navigate('/tickets')} />
         <ErrorMessage message="Failed to load ticket. Please try again." />
       </div>
@@ -40,9 +40,13 @@ export function TicketDetailPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Ticket #{ticket.id.toString()}</h1>
-      <BackButton onBack={() => navigate('/tickets')} />
+    <div className="space-y-8 animate-fade-up">
+      <div className="flex flex-col gap-1">
+        <BackButton onBack={() => navigate('/tickets')} />
+        <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+          Ticket #{ticket.id.toString()}
+        </h1>
+      </div>
 
       <TicketDetail ticket={ticket} agents={agents} />
 

@@ -11,8 +11,8 @@ interface ErrorMessageProps {
  */
 export function ErrorMessage({ message, className = '' }: ErrorMessageProps) {
   return (
-    <p className={`text-destructive ${className}`}>
-      <AlertCircle className="inline h-3 w-3 mr-1" />
+    <p className={`text-coral-600 font-medium flex items-center gap-1.5 ${className}`}>
+      <AlertCircle className="inline h-4 w-4 flex-shrink-0" />
       {message}
     </p>
   );

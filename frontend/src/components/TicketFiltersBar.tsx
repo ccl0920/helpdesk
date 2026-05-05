@@ -76,12 +76,12 @@ export function TicketFiltersBar({ filters, onFilterChange }: TicketFiltersBarPr
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search tickets by subject, email, or description..."
             value={filters.search || ''}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="pl-9"
+            className="pl-10 rounded-full bg-background border-border/60"
           />
         </div>
 
@@ -90,7 +90,7 @@ export function TicketFiltersBar({ filters, onFilterChange }: TicketFiltersBarPr
           value={filters.status || 'all'}
           onValueChange={handleStatusChange}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] rounded-full bg-background border-border/60">
             {filters.status
               ? STATUS_OPTIONS.find((s) => s.value === filters.status)?.label
               : <span className="text-muted-foreground">All statuses</span>}
@@ -110,7 +110,7 @@ export function TicketFiltersBar({ filters, onFilterChange }: TicketFiltersBarPr
           value={filters.category || 'all'}
           onValueChange={handleCategoryChange}
         >
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] rounded-full bg-background border-border/60">
             {filters.category
               ? CATEGORY_OPTIONS.find((c) => c.value === filters.category)?.label
               : <span className="text-muted-foreground">All categories</span>}
@@ -131,7 +131,7 @@ export function TicketFiltersBar({ filters, onFilterChange }: TicketFiltersBarPr
             variant="outline"
             size="sm"
             onClick={handleClearFilters}
-            className="gap-2"
+            className="gap-2 rounded-full border-border/80"
           >
             <X className="h-4 w-4" />
             Clear filters

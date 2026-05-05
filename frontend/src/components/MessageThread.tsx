@@ -22,68 +22,69 @@ export function MessageThread({ messages }: MessageThreadProps) {
 
   if (!messages || messages.length === 0) {
     return (
-      <Card>
+      <Card className="border-0 shadow-soft">
         <CardHeader>
-          <CardTitle>Message Thread</CardTitle>
+          <CardTitle className="text-lg font-heading">Message Thread</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-center text-muted-foreground py-8">No messages yet</p>
+          <p className="text-center text-muted-foreground py-10 font-body">No messages yet</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="border-0 shadow-soft">
       <CardHeader>
-        <CardTitle>Message Thread</CardTitle>
+        <CardTitle className="text-lg font-heading">Message Thread</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-5">
           {messages.map((message) => {
             const isAgent = message.senderType === SenderType.AGENT;
             return (
               <div
                 key={message.id}
-                className={`border rounded-lg p-4 space-y-2 ${
-                  isAgent
-                    ? 'bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900'
-                    : 'bg-white'
-                }`}
+                className={`flex gap-3 ${isAgent ? 'flex-row' : 'flex-row-reverse'}`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-2">
-                    {isAgent ? (
-                      <User className="h-4 w-4 mt-0.5 text-blue-600" />
-                    ) : (
-                      <Mail className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                    )}
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{message.from}</p>
-                        <Badge
-                          variant={isAgent ? 'default' : 'secondary'}
-                          className="text-xs"
-                        >
-                          {isAgent ? 'Agent' : 'Customer'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">{message.subject}</p>
-                    </div>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(message.createdAt)}
-                  </span>
+                {/* Avatar */}
+                <div className={`flex-shrink-0 flex items-center justify-center size-9 rounded-full ${
+                  isAgent ? 'bg-teal-100 text-teal-700' : 'bg-sage-200 text-sage-700'
+                }`}>
+                  {isAgent ? <User className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                 </div>
-                <div className="text-sm text-muted-foreground pl-6">
-                  {message.bodyHtml ? (
-                    <div
-                      className="prose prose-sm max-w-none dark:prose-invert"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.bodyHtml) }}
-                    />
-                  ) : (
-                    <div className="whitespace-pre-wrap">{message.body}</div>
-                  )}
+
+                {/* Bubble */}
+                <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 shadow-soft ${
+                  isAgent
+                    ? 'bg-teal-50 text-teal-900 rounded-tl-md'
+                    : 'bg-card border border-border/40 rounded-tr-md'
+                }`}>
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <p className="font-semibold text-sm truncate">{message.from}</p>
+                      <Badge
+                        variant={isAgent ? 'teal' : 'secondary'}
+                        className="text-[10px] px-2 py-0"
+                      >
+                        {isAgent ? 'Agent' : 'Customer'}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap flex-shrink-0">
+                      {formatDate(message.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-1 font-medium">{message.subject}</p>
+                  <div className="text-sm leading-relaxed">
+                    {message.bodyHtml ? (
+                      <div
+                        className="prose prose-sm max-w-none dark:prose-invert"
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(message.bodyHtml) }}
+                      />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{message.body}</div>
+                    )}
+                  </div>
                 </div>
               </div>
             );

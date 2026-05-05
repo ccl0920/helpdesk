@@ -112,7 +112,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
             <DialogTitle>{isEditing ? 'Edit User' : 'Create New User'}</DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid gap-5 py-5">
             {generalError && (
               <Alert variant="destructive">
                 <AlertDescription>{generalError}</AlertDescription>
@@ -126,7 +126,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 autoComplete="name"
                 disabled={isSubmitting}
                 placeholder="Enter user name"
-                className={errors.name ? 'border-destructive ring-3 ring-destructive/20' : ''}
+                className={errors.name ? 'border-coral-300 ring-3 ring-coral-500/15' : ''}
                 {...register('name')}
               />
               {errors.name && (
@@ -142,7 +142,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 autoComplete="new-email"
                 disabled={isSubmitting}
                 placeholder="Enter email address"
-                className={errors.email ? 'border-destructive ring-3 ring-destructive/20' : ''}
+                className={errors.email ? 'border-coral-300 ring-3 ring-coral-500/15' : ''}
                 {...register('email')}
               />
               {errors.email && (
@@ -160,7 +160,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 autoComplete="new-password"
                 disabled={isSubmitting}
                 placeholder={isEditing ? 'Enter new password (optional)' : 'Enter password'}
-                className={errors.password ? 'border-destructive ring-3 ring-destructive/20' : ''}
+                className={errors.password ? 'border-coral-300 ring-3 ring-coral-500/15' : ''}
                 {...register('password')}
               />
               {errors.password && (
@@ -174,7 +174,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
                 value={roleValue}
                 onValueChange={(value) => value && setValue('role', value as Role)}
               >
-                <SelectTrigger className={errors.role ? 'border-destructive ring-3 ring-destructive/20' : ''}>
+                <SelectTrigger className={errors.role ? 'border-coral-300 ring-3 ring-coral-500/15' : 'w-full rounded-xl bg-background border-border/60'}>
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -189,7 +189,7 @@ export function UserFormModal({ open, onOpenChange, user, onSubmit }: UserFormMo
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting} className="rounded-full border-border/80">
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>

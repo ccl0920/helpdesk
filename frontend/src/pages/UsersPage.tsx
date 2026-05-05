@@ -72,19 +72,26 @@ export function UsersPage() {
   };
 
   return (
-    <div>
-      <div className="mb-8 flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-foreground">User Management</h1>
-        <Button onClick={() => setIsCreating(true)}>
-          <PlusIcon className="w-4 h-4 mr-2" />
+    <div className="space-y-6 animate-fade-up">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-foreground">
+            User Management
+          </h1>
+          <p className="mt-1 text-muted-foreground font-body">
+            Create and manage team members
+          </p>
+        </div>
+        <Button onClick={() => setIsCreating(true)} className="gap-2 self-start">
+          <PlusIcon className="w-4 h-4" />
           Create User
         </Button>
       </div>
 
-      <Card>
+      <Card className="border-0 shadow-soft">
         <CardContent className="pt-6">
           {error && (
-            <p className="text-sm text-destructive mb-4">
+            <p className="text-sm text-coral-600 mb-4 font-medium">
               {error instanceof Error ? error.message : 'Failed to load users'}
             </p>
           )}

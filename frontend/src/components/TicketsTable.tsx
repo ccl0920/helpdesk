@@ -54,7 +54,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
       accessorKey: 'id',
       header: 'ID',
       cell: ({ row }) => (
-        <span className="font-medium text-muted-foreground">
+        <span className="font-mono text-xs text-muted-foreground bg-secondary/60 px-2 py-1 rounded-md">
           {formatTicketId(row.getValue('id'))}
         </span>
       ),
@@ -79,7 +79,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
         return (
           <div className="flex flex-col">
             {ticket.senderName && (
-              <span className="text-sm font-medium">{ticket.senderName}</span>
+              <span className="text-sm font-semibold text-foreground">{ticket.senderName}</span>
             )}
             <span className="text-sm text-muted-foreground">{ticket.emailFrom}</span>
           </div>
@@ -108,7 +108,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
             {CATEGORY_CONFIG[category].label}
           </Badge>
         ) : (
-          <span className="text-muted-foreground">—</span>
+          <span className="text-muted-foreground text-sm">—</span>
         );
       },
     },
@@ -116,7 +116,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
       accessorKey: 'createdAt',
       header: 'Created',
       cell: ({ row }) => (
-        <span className="text-muted-foreground whitespace-nowrap">
+        <span className="text-muted-foreground whitespace-nowrap text-sm">
           {formatDate(row.getValue('createdAt'))}
         </span>
       ),
@@ -157,24 +157,25 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
 
   // Handle sort on column header click
   const handleSort = (columnId: string) => {
-    if (sortBy === columnId) {
+    const col = columnId as SortColumn;
+    if (sortBy === col) {
       // Toggle sort order
-      onSortChange(columnId, sortOrder === 'asc' ? 'desc' : 'asc');
+      onSortChange(col, sortOrder === 'asc' ? 'desc' : 'asc');
     } else {
       // New column, default to descending
-      onSortChange(columnId, 'desc');
+      onSortChange(col, 'desc');
     }
   };
 
   // Get sort icon for column
   const getSortIcon = (columnId: string) => {
     if (sortBy !== columnId) {
-      return <ArrowUpDown className="ml-2 h-4 w-4" />;
+      return <ArrowUpDown className="ml-2 h-3.5 w-3.5 opacity-40" />;
     }
     return sortOrder === 'asc' ? (
-      <ArrowUp className="ml-2 h-4 w-4" />
+      <ArrowUp className="ml-2 h-3.5 w-3.5 text-primary" />
     ) : (
-      <ArrowDown className="ml-2 h-4 w-4" />
+      <ArrowDown className="ml-2 h-3.5 w-3.5 text-primary" />
     );
   };
 
@@ -186,7 +187,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id}>
-                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-20 rounded-lg" />
                 </TableHead>
               ))}
             </TableRow>
@@ -195,12 +196,12 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
         <TableBody>
           {Array.from({ length: 5 }).map((_, i) => (
             <TableRow key={i}>
-              <TableCell><Skeleton className="h-4 w-12" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-48" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-32" /></TableCell>
-              <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-              <TableCell><Skeleton className="h-6 w-20" /></TableCell>
-              <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-12 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-48 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-32 rounded-lg" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+              <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-28 rounded-lg" /></TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -219,7 +220,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
                   <Button
                     variant="ghost"
                     onClick={() => handleSort(header.column.id)}
-                    className="-ml-3 h-8 data-[state=open]:bg-accent"
+                    className="-ml-3 h-8 rounded-full text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary/60 data-[state=open]:bg-accent"
                   >
                     {header.isPlaceholder
                       ? null
@@ -244,7 +245,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={columns.length} className="text-center py-12 text-muted-foreground font-body">
                 No tickets found
               </TableCell>
             </TableRow>
@@ -253,8 +254,8 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
       </Table>
 
       {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-border/40">
+          <p className="text-sm text-muted-foreground font-body">
             Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, data.total)} of {data.total} tickets
           </p>
           <div className="flex items-center gap-2">
@@ -263,6 +264,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
               size="sm"
               onClick={() => onPageChange(page - 1)}
               disabled={page <= 1}
+              className="rounded-full border-border/80"
             >
               Previous
             </Button>
@@ -317,7 +319,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
                       variant={page === p ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => onPageChange(p as number)}
-                      className="min-w-9"
+                      className="min-w-9 rounded-full"
                     >
                       {p}
                     </Button>
@@ -331,6 +333,7 @@ export function TicketsTable({ data, isLoading, page, onPageChange, sortBy, sort
               size="sm"
               onClick={() => onPageChange(page + 1)}
               disabled={page >= data.totalPages}
+              className="rounded-full border-border/80"
             >
               Next
             </Button>

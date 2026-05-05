@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateTicket } from '@/lib/api';
 import { STATUS_CONFIG, CATEGORY_CONFIG, TicketStatus, TicketCategory } from '@helpdesk/common';
 import { ErrorMessage } from '@/components/ui/error-message';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -71,16 +72,16 @@ export function UpdateTicket({ ticket, agents }: UpdateTicketProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <span className="text-muted-foreground text-sm">Status</span>
-        <div className="mt-1">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Status</Label>
+        <div className="mt-1.5">
           <Select
             value={selectedStatus || ticket.status}
             onValueChange={handleStatusChange}
             disabled={updateMutation.isPending}
           >
-            <SelectTrigger className="w-[180px]" aria-label="Update status">
+            <SelectTrigger className="w-full rounded-xl bg-background border-border/60" aria-label="Update status">
               <SelectValue>
                 {STATUS_CONFIG[selectedStatus || ticket.status].label}
               </SelectValue>
@@ -99,14 +100,14 @@ export function UpdateTicket({ ticket, agents }: UpdateTicketProps) {
       </div>
 
       <div>
-        <span className="text-muted-foreground text-sm">Category</span>
-        <div className="mt-1">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Category</Label>
+        <div className="mt-1.5">
           <Select
             value={(selectedCategory || 'none') as string}
             onValueChange={handleCategoryChange}
             disabled={updateMutation.isPending}
           >
-            <SelectTrigger className="w-[180px]" aria-label="Update category">
+            <SelectTrigger className="w-full rounded-xl bg-background border-border/60" aria-label="Update category">
               <SelectValue>
                 {selectedCategory === 'none' || !selectedCategory
                   ? 'No Category'
@@ -126,14 +127,14 @@ export function UpdateTicket({ ticket, agents }: UpdateTicketProps) {
       </div>
 
       <div>
-        <span className="text-muted-foreground text-sm">Assigned To</span>
-        <div className="mt-1">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Assigned To</Label>
+        <div className="mt-1.5">
           <Select
             value={selectedAgentId || 'unassigned'}
             onValueChange={handleAgentChange}
             disabled={updateMutation.isPending}
           >
-            <SelectTrigger className="w-[180px]" aria-label="Select an agent">
+            <SelectTrigger className="w-full rounded-xl bg-background border-border/60" aria-label="Select an agent">
               <SelectValue>
                 {selectedAgentId
                   ? (agents.find((a) => a.id === selectedAgentId)?.name ||
@@ -161,10 +162,10 @@ export function UpdateTicket({ ticket, agents }: UpdateTicketProps) {
           </Select>
         </div>
         {updateMutation.isPending && (
-          <p className="text-xs text-muted-foreground mt-1">Updating...</p>
+          <p className="text-xs text-muted-foreground mt-2 font-medium">Updating...</p>
         )}
         {updateMutation.isError && (
-          <ErrorMessage message="Failed to update" className="text-xs mt-1" />
+          <ErrorMessage message="Failed to update" className="text-xs mt-2" />
         )}
       </div>
     </div>
