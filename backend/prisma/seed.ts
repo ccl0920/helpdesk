@@ -56,6 +56,7 @@ async function main() {
       data: {
         email: adminEmail,
         name: 'Admin User',
+        emailVerified: true,
         role: Role.ADMIN,
         accounts: {
           create: {
@@ -91,6 +92,7 @@ async function main() {
         data: {
           email: agentEmail,
           name: 'Agent User',
+          emailVerified: true,
           role: Role.AGENT,
           accounts: {
             create: {

@@ -25,6 +25,8 @@ import { registerAutoResolutionWorker } from './lib/autoResolution.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+  const isProduction = process.env.NODE_ENV === 'production';
+
 // Parse trusted origins from environment variable
 const trustedOrigins = (process.env.TRUSTED_ORIGINS || 'http://localhost:5173')
   .split(',')
@@ -127,6 +129,16 @@ app.get('/api', generalLimiter, (req, res) => {
   res.json({ message: 'Helpdesk API v1' });
 });
 
+// Serve frontend static files in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendDist = new URL('../../frontend/dist', import.meta.url).pathname;
+  app.use(express.static(frontendDist));
+  // SPA fallback for client-side routing (Express 5 wildcard syntax)
+  app.get('/{*splat}', (req, res) => {
+    res.sendFile('index.html', { root: frontendDist });
+  });
+}
+
 // Error handling middleware
 app.use(async (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
   // Send to Sentry and flush to ensure delivery
@@ -149,8 +161,6 @@ app.use(async (err: Error, req: express.Request, res: express.Response, next: ex
   }
 
   // Return generic error in production, details in development
-  const isProduction = process.env.NODE_ENV === 'production';
-
   res.status(500).json({
     error: 'Internal server error',
     sentryEventId: eventId,
